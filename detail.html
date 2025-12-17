@@ -7,7 +7,7 @@
     
     <style>
         /* ------------------------------------
-           通用樣式（與 index.html 保持一致）
+            通用樣式（與 index.html 保持一致）
         ------------------------------------ */
         @import url('https://fonts.googleapis.com/css2?family=Huninn&display=swap');
 
@@ -50,7 +50,7 @@
         }
 
         /* ------------------------------------
-           導航列 (Navbar) - 保持與 index.txt 一致
+            導航列 (Navbar)
         ------------------------------------ */
         #navbar {
             background-color: #fff;
@@ -92,14 +92,15 @@
         }
 
         /* ------------------------------------
-           產品詳情區 (Detail)
+            產品詳情區 (Detail)
         ------------------------------------ */
         #product-detail-area {
             padding: 40px 0;
         }
-
+        
+        /* 預設隱藏，只顯示載入狀態，載入後再顯示 product-wrapper */
         .product-wrapper {
-            display: flex;
+            display: none; 
             gap: 50px;
             flex-wrap: wrap;
         }
@@ -233,6 +234,7 @@
 
         /* 產品描述和資訊 */
         .product-details {
+            display: none; /* 預設隱藏，載入後顯示 */
             margin-top: 50px;
             border-top: 1px solid #eee;
             padding-top: 30px;
@@ -284,7 +286,7 @@
         }
 
         /* ------------------------------------
-           Footer - 保持與 index.txt 一致
+            Footer - 保持與 index.txt 一致
         ------------------------------------ */
         #footer {
             background-color: #333;
@@ -331,9 +333,9 @@
     </header>
 
     <div id="product-detail-area" class="wrapper">
-        <div class="loading-state">產品資訊載入中...</div>
+        <div class="loading-state" id="loading-state">產品資訊載入中...</div>
         
-        <div class="product-wrapper">
+        <div class="product-wrapper" id="product-wrapper">
             <div class="image-gallery">
                 <div class="main-image-box">
                     <img id="main-image" src="" alt="主要產品圖片">
@@ -363,7 +365,7 @@
             </div>
         </div>
 
-        <div class="product-details">
+        <div class="product-details" id="product-details-content">
             <div class="details-tabs">
                 <button class="tab-button active" data-tab="description">商品描述</button>
                 <button class="tab-button" data-tab="notes">注意事項</button>
@@ -400,11 +402,9 @@
 
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
-// detail.txt 底部 <script> 區塊內容 (請替換原有的)
-
     <script>
         // =========================================================
-        // 這是您部署後的 Google Apps Script URL
+        // 修正點 1: 整合您的 Google Apps Script URL
         // =========================================================
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxj1KQbiB3Q4aJAIJDJ_LcIbddkkrBNeCS_J1Wo44JbGZW6KpjmhmHxemURciWA8p6QyA/exec'; 
         
@@ -412,7 +412,7 @@
         let currentProduct = null; // 儲存當前產品資料
 
         /**
-         * 購物車管理函數 (從 cart.txt 提取)
+         * 購物車管理函數 (從 localStorage 載入和儲存)
          */
         function loadCart() {
             const cartJson = localStorage.getItem('shoppingCart');
@@ -459,40 +459,68 @@
 
         /**
          * 渲染單一產品的詳細資訊
-         * [此函數與上一步提供的版本相同，功能是將數據渲染到頁面]
+         * 修正點 2: 修正所有欄位名稱為大寫，並使用正確的 ID 欄位 Code
          * @param {Object} product - 產品資料物件
          */
         function renderProductDetail(product) {
-            // ... (此處保留原有的 renderProductDetail 函數內容)
-            // 由於函數較長，為節省篇幅省略，但請確保您上一步的完整代碼在這裡。
-            if (!product || !product.id) {
-                document.getElementById('product-detail-area').innerHTML = '<div class="loading-state"><h1>找不到該產品資訊或資料不完整</h1></div>';
+            if (!product || !product.Code) {
+                document.getElementById('product-wrapper').style.display = 'none';
+                document.getElementById('loading-state').innerHTML = '<h1>找不到該產品資訊或資料不完整</h1>';
+                document.getElementById('product-details-content').style.display = 'none';
                 return;
             }
 
-            document.getElementById('page-title').textContent = `${product.name} - ${product.brand} 詳細資訊`;
-            document.getElementById('product-name').textContent = product.name || '無名稱';
-            document.getElementById('product-brand').textContent = product.brand || 'N/A';
-            document.getElementById('sale-price').textContent = (product.price_sale || 0) + ' TWD';
-            document.getElementById('original-price').textContent = (product.price_original || 0) + ' TWD';
+            // 顯示產品內容，隱藏載入狀態
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('product-wrapper').style.display = 'flex';
+            document.getElementById('product-details-content').style.display = 'block';
+
+            document.getElementById('page-title').textContent = `${product.Name} - ${product.Brand} 詳細資訊`;
+            document.getElementById('product-name').textContent = product.Name || '無名稱';
+            document.getElementById('product-brand').textContent = product.Brand || 'N/A';
             
+            // 價格欄位修正
+            const originalPrice = parseFloat(product.Price_Original) || 0;
+            const discountPrice = parseFloat(product['Price-20%OFF']) || 0;
+            
+            document.getElementById('sale-price').textContent = discountPrice.toFixed(0) + ' TWD';
+            document.getElementById('original-price').textContent = originalPrice.toFixed(0) + ' TWD';
+            
+            // 主圖 URL 修正
             const mainImageEl = document.getElementById('main-image');
-            mainImageEl.src = product.main_image || 'placeholder.jpg';
-            mainImageEl.alt = product.name || '產品圖片';
+            const mainImageUrl = product.MainImage_URL || 'placeholder.jpg';
+            mainImageEl.src = mainImageUrl;
+            mainImageEl.alt = product.Name || '產品圖片';
             
-            const descriptionHtml = (product.description || '無描述').replace(/\n/g, '<br>');
+            // 描述和注意事項內容修正
+            const descriptionHtml = (product.Description || '無描述').replace(/\n/g, '<br>');
             document.getElementById('product-description').innerHTML = descriptionHtml;
 
-            const notesHtml = (product.notes || '無注意事項').replace(/\n/g, '<br>');
+            const notesHtml = (product.Notes || '無注意事項').replace(/\n/g, '<br>');
             document.getElementById('product-notes').innerHTML = notesHtml;
             
-            // 渲染輔助圖片 (Gallery Thumbs)
+            // 渲染輔助圖片 (Gallery Thumbs) - 使用 ColorImages
             const galleryThumbsEl = document.getElementById('gallery-thumbs');
-            if (product.eimage_urls && galleryThumbsEl) {
-                const urls = String(product.eimage_urls).split(';').map(url => url.trim()).filter(url => url.length > 0);
+            const allImages = [mainImageUrl]; // 以主圖為第一張
+            
+            if (product.ColorImages) {
+                // 解析 ColorImages 欄位，例如: 白#/img/a.jpg；黑#/img/b.jpg
+                const colorImageParts = String(product.ColorImages).split('；').map(s => s.trim()).filter(s => s.length > 0);
+                
+                colorImageParts.forEach(part => {
+                    const match = part.match(/#\/(.+)/); // 找到 #/ 後面的圖片路徑
+                    if (match && match[1]) {
+                        allImages.push('/' + match[1]); // 假設路徑是 /images/xxx.jpg
+                    }
+                });
+            }
+            
+            // 渲染所有圖片縮圖
+            if (galleryThumbsEl) {
                 let galleryHtml = '';
-                urls.forEach(url => {
-                    galleryHtml += `<img src="${url}" alt="${product.name} 輔助圖片" data-full-image="${url}" class="thumb-image">`;
+                allImages.forEach((url, index) => {
+                    const isActive = index === 0 ? 'active' : '';
+                    galleryHtml += `<img src="${url}" alt="${product.Name} 輔助圖片 ${index + 1}" data-full-image="${url}" class="thumb-image ${isActive}">`;
                 });
                 galleryThumbsEl.innerHTML = galleryHtml;
                 
@@ -504,19 +532,18 @@
                         this.classList.add('active');
                     });
                 });
-                if (document.querySelector('.thumb-image')) {
-                     document.querySelector('.thumb-image').classList.add('active');
-                }
             }
 
-            // 渲染尺寸和庫存選項
-            const sizes = product.sizes;
+            // 渲染尺寸和庫存選項 - 使用 Sizes_Details
+            const sizesDetails = product.Sizes_Details; // 使用正確的欄位名稱
             const sizeOptionsEl = document.getElementById('size-options');
-            if (sizes && sizeOptionsEl) {
-                const sizeParts = String(sizes).split('；').map(s => s.trim()).filter(s => s.length > 0);
+            if (sizesDetails && sizeOptionsEl) {
+                // 修正解析邏輯：分隔符號是中文分號 (；)
+                const sizeParts = String(sizesDetails).split('；').map(s => s.trim()).filter(s => s.length > 0);
                 let optionsHtml = '';
 
                 sizeParts.forEach((part, index) => {
+                    // 格式: 尺寸-顏色/花紋-庫存
                     const partsArray = part.split('-');
                     if (partsArray.length < 3) return; 
 
@@ -524,7 +551,8 @@
                     const color = partsArray[1].trim(); 
                     const stock = parseInt(partsArray[2].trim()) || 0; 
 
-                    const optionPrice = product.price_sale || product.price_original; 
+                    // 詳細頁面統一使用折扣價
+                    const optionPrice = discountPrice; 
                     const optionId = `size-option-${index}`;
                     const isDisabled = stock <= 0; 
 
@@ -568,16 +596,16 @@
             const color = selectedOption.getAttribute('data-color');
             const price = parseFloat(selectedOption.getAttribute('data-price'));
             const stock = parseInt(selectedOption.getAttribute('data-stock'));
-            const qty = 1; // 預設數量為 1 (如果需要數量輸入框，這裡需修改)
+            const qty = 1; // 預設數量為 1 
 
             if (stock < qty) {
                  alert('庫存不足，無法加入購物車。');
                  return;
             }
 
-            // 3. 檢查購物車中是否已有相同 SKU (ID + 尺寸 + 顏色) 的商品
+            // 3. 檢查購物車中是否已有相同 SKU (Code + 尺寸 + 顏色) 的商品
             const itemIndex = cart.findIndex(item => 
-                item.code === currentProduct.id && 
+                item.code === currentProduct.Code && 
                 item.displaySize === size && 
                 item.color === color
             );
@@ -588,22 +616,21 @@
             } else {
                 // 不存在：新增商品
                 const newItem = {
-                    name: currentProduct.name, 
+                    name: currentProduct.Name, 
                     price: price, 
                     displaySize: size, 
                     color: color, 
-                    code: currentProduct.id, 
+                    code: currentProduct.Code, // 使用產品 Code 作為唯一 ID
                     qty: qty, 
                     selected: true,
-                    imageUrl: currentProduct.main_image || 'placeholder.jpg'
+                    imageUrl: currentProduct.MainImage_URL || 'placeholder.jpg'
                 };
                 cart.push(newItem);
             }
 
             // 4. 儲存購物車並給予提示
             saveCart();
-            alert(`${currentProduct.name} (尺寸: ${size}, 顏色: ${color}) 已成功加入購物車！`);
-            // 可以導向購物車頁面
+            alert(`${currentProduct.Name} (尺寸: ${size}, 顏色: ${color}) 已成功加入購物車！`);
             // window.location.href = 'cart.html'; 
         }
 
@@ -612,44 +639,45 @@
          */
         async function loadProduct() {
             const productId = getUrlParam('id');
-            const container = document.getElementById('product-detail-area'); 
-            const addToCartBtn = document.querySelector('.add-to-cart-btn');
+            const loadingState = document.getElementById('loading-state');
             
             if (!productId) {
-                if(container) container.innerHTML = '<div class="loading-state"><h1>錯誤：URL 中缺少產品 ID。</h1></div>';
+                if(loadingState) loadingState.innerHTML = '<h1>錯誤：URL 中缺少產品 ID。</h1>';
                 return;
             }
             
-            if(container) container.innerHTML = '<div class="loading-state">產品資訊載入中...</div>';
-
             try {
                 const response = await fetch(GAS_URL);
                 const products = await response.json(); 
 
                 if (products && Array.isArray(products)) {
-                    const product = products.find(p => String(p.id).trim() === String(productId).trim());
+                    // 尋找匹配 Code 的產品
+                    const product = products.find(p => String(p.Code).trim() === String(productId).trim());
                     
                     if (product) {
-                        currentProduct = product; // *** 儲存當前產品資料 ***
+                        currentProduct = product; // *** 儲存當前產品資料供購物車使用 ***
                         
-                        container.innerHTML = document.querySelector('.product-wrapper').outerHTML + document.querySelector('.product-details').outerHTML;
+                        // 渲染頁面
                         renderProductDetail(product);
                         setupTabs(); 
                         
-                        // *** 連接按鈕事件 ***
+                        // *** 連接「加入購物車」按鈕事件 ***
+                        const addToCartBtn = document.querySelector('.add-to-cart-btn');
                         if (addToCartBtn) {
+                            addToCartBtn.removeEventListener('click', handleAddToCart); // 避免重複綁定
                             addToCartBtn.addEventListener('click', handleAddToCart);
                         }
+
                     } else {
-                        if(container) container.innerHTML = `<div class="loading-state"><h1>找不到 ID 為 ${productId} 的產品。</h1></div>`;
+                        if(loadingState) loadingState.innerHTML = `<div class="loading-state"><h1>找不到 ID 為 ${productId} 的產品。</h1></div>`;
                     }
                 } else {
-                    if(container) container.innerHTML = '<div class="loading-state"><h1>無法讀取產品資料庫。</h1></div>';
+                    if(loadingState) loadingState.innerHTML = '<div class="loading-state"><h1>無法讀取產品資料庫。</h1></div>';
                 }
 
             } catch (error) {
                 console.error('載入產品詳情時發生錯誤:', error);
-                if(container) container.innerHTML = '<div class="loading-state" style="color: red;"><h1>資料載入失敗，請檢查網路或 Apps Script URL。</h1></div>';
+                if(loadingState) loadingState.innerHTML = '<div class="loading-state" style="color: red;"><h1>資料載入失敗，請檢查網路或 Apps Script URL。</h1></div>';
             }
         }
 

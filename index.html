@@ -7,7 +7,7 @@
     
     <style>
         /* ------------------------------------
-           通用重置與字體設定 (粉圓體)
+            通用重置與字體設定 (粉圓體)
         ------------------------------------ */
         @import url('https://fonts.googleapis.com/css2?family=Huninn&display=swap');
 
@@ -50,7 +50,7 @@
         }
 
         /* ------------------------------------
-           導航列 (Navbar)
+            導航列 (Navbar)
         ------------------------------------ */
         #navbar {
             background-color: #fff;
@@ -103,7 +103,7 @@
         }
 
         /* ------------------------------------
-           主內容區 (Main Content)
+            主內容區 (Main Content)
         ------------------------------------ */
         #main-content {
             padding: 40px 0;
@@ -179,7 +179,7 @@
         }
 
         /* ------------------------------------
-           Footer
+            Footer
         ------------------------------------ */
         #footer {
             background-color: #333;
@@ -266,7 +266,7 @@
 
     <script>
         // =========================================================
-        // 這是您部署後的 Google Apps Script URL
+        // 🚨 修正點 1: 整合您的 Google Apps Script URL
         // =========================================================
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxj1KQbiB3Q4aJAIJDJ_LcIbddkkrBNeCS_J1Wo44JbGZW6KpjmhmHxemURciWA8p6QyA/exec'; 
 
@@ -279,48 +279,61 @@
          * @returns {string} 產品卡片的 HTML 字符串。
          */
         function createProductCard(product) {
-            // 確保 price_original 和 price_sale 是數字
-            const originalPrice = parseFloat(product.price_original) || 0;
-            const salePrice = parseFloat(product.price_sale) || 0;
+            // =========================================================
+            // 🚨 修正點 2: 依據 JSON 數據，修正所有欄位名稱為大寫
+            // =========================================================
             
-            // 處理圖片 URL，避免出現 'undefined'
-            const imageUrl = product.main_image || '/images/placeholder.jpg';
-            const productName = product.name || '無名稱產品';
+            const productCode = product.Code; // 使用 Code 作為 ID
+            const productName = product.Name || '無名稱產品';
+            
+            // 價格欄位修正：使用正確的大寫欄位名稱
+            const originalPrice = parseFloat(product.Price_Original) || 0;
+            // 處理帶有特殊符號的欄位名稱 (例如 Price-20%OFF)
+            const discountPrice = parseFloat(product['Price-20%OFF']) || 0; 
+            
+            // 圖片 URL 修正：使用正確的大寫欄位名稱
+            const imageUrl = product.MainImage_URL || '/images/placeholder.jpg';
 
-            // --- 顏色顯示邏輯 (解析 sizes 欄位) ---
-            // 試算表 sizes 範例格式: S-黑白格紋-3； M-蝴蝶結-5
+            // --- 顏色顯示邏輯 (解析 ColorImages 欄位) ---
             let colorNames = [];
-            if (product.sizes) {
-                const parts = String(product.sizes).split('；');
-                colorNames = parts.map(part => {
-                    // 尋找第一個 '-' 和第二個 '-' 之間的內容，即顏色/花紋名稱
-                    const match = part.trim().match(/-([^-\s]+)-/); 
-                    return match ? match[1] : ''; 
+            if (product.ColorImages) {
+                // 移除換行符號，並以分號（；）分隔每個顏色項目
+                const colorItems = String(product.ColorImages).replace(/\n/g, '').split('；'); 
+                
+                colorNames = colorItems.map(item => {
+                    // 分割顏色名稱和圖片路徑
+                    const parts = item.trim().split('#/');
+                    return parts.length > 0 ? parts[0] : ''; // 取得顏色名稱
                 }).filter(name => name.length > 0)
-                  .slice(0, 3); // 最多只顯示 3 個顏色/花紋
+                  .slice(0, 4); // 最多顯示 4 個顏色/花紋
             }
             
-            // 簡易的顏色代碼對應表
+            // 簡易的顏色代碼對應表 (請注意，這裡使用通用顏色，但標題會顯示您的自定義名稱)
             const colorMap = {
                 '黑白格紋': '#4A4A4A',
                 '蝴蝶結': '#FFB6C1', 
+                '紅格紋': '#B71C1C',
+                '豹紋': '#B8860B',
+                '黑白圓點': '#333333',
+                '紅白圓點': '#FF8A80',
                 '白': '#E0E0E0',
                 '黑': '#333333',
                 '米': '#F5F5DC',
                 '粉': '#FFC0CB',
                 '灰': '#CCCCCC'
-                // 請根據您的產品顏色增加更多對應
             };
             
             const colorSwatchesHtml = colorNames.map(colorName => {
-                const colorCode = colorMap[colorName] || '#CCCCCC'; 
-                // 將顏色名稱儲存在 data-name 中，滑鼠懸停時可顯示
+                // 嘗試匹配顏色代碼，否則使用灰色
+                const colorCode = colorMap[colorName] || '#999999'; 
+                
+                // 將顏色名稱儲存在 title 中，滑鼠懸停時可顯示
                 return `<span class="swatch" title="${colorName}" style="background-color: ${colorCode};"></span>`;
             }).join('');
 
             return `
                 <li class="product-item">
-                    <a href="detail.html?id=${product.id}" class="product-link">
+                    <a href="detail.html?id=${productCode}" class="product-link">
                         <div class="product-image">
                             <img src="${imageUrl}" alt="${productName}">
                         </div>
@@ -330,10 +343,10 @@
                             ${colorSwatchesHtml}
                         </div>
                     </div>
-                    <a href="detail.html?id=${product.id}" class="product-name">${productName}</a>
+                    <a href="detail.html?id=${productCode}" class="product-name">${productName}</a>
                     <div class="price-box">
                         <span class="original-price">${originalPrice.toFixed(0)} TWD</span>
-                        <span class="discount-price">${salePrice.toFixed(0)} TWD</span>
+                        <span class="discount-price">${discountPrice.toFixed(0)} TWD</span>
                     </div>
                 </li>
             `;
