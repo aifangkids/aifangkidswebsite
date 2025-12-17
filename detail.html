@@ -234,7 +234,7 @@
 
         /* 產品描述和資訊 */
         .product-details {
-            display: none; /* 預設隱藏，載入後顯示 */
+            /* 修正: 載入後顯示，不需要預設 display: none */
             margin-top: 50px;
             border-top: 1px solid #eee;
             padding-top: 30px;
@@ -408,6 +408,9 @@
         // =========================================================
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxj1KQbiB3Q4aJAIJDJ_LcIbddkkrBNeCS_J1Wo44JbGZW6KpjmhmHxemURciWA8p6QyA/exec'; 
         
+        // 預設圖片（如果 MainImage_URL 為空時使用）
+        const defaultImage = 'placeholder.jpg'; 
+
         let cart = []; // 購物車陣列
         let currentProduct = null; // 儲存當前產品資料
 
@@ -481,40 +484,57 @@
             
             // 價格欄位修正
             const originalPrice = parseFloat(product.Price_Original) || 0;
-            const discountPrice = parseFloat(product['Price-20%OFF']) || 0;
+            // 由於 JSON 中 Price-20%OFF 有 '-'，需要用方括號訪問
+            const discountPrice = parseFloat(product['Price-20%OFF']) || 0; 
             
             document.getElementById('sale-price').textContent = discountPrice.toFixed(0) + ' TWD';
             document.getElementById('original-price').textContent = originalPrice.toFixed(0) + ' TWD';
             
             // 主圖 URL 修正
             const mainImageEl = document.getElementById('main-image');
-            const mainImageUrl = product.MainImage_URL || 'placeholder.jpg';
+            const mainImageUrl = product.MainImage_URL && product.MainImage_URL.trim() !== '' ? product.MainImage_URL.trim() : defaultImage;
             mainImageEl.src = mainImageUrl;
             mainImageEl.alt = product.Name || '產品圖片';
             
-            // 描述和注意事項內容修正
-            const descriptionHtml = (product.Description || '無描述').replace(/\n/g, '<br>');
+            // 描述和注意事項內容修正 (使用 JSON 中存在的欄位)
+            const descriptionHtml = (product.Description || '無商品描述').replace(/\n/g, '<br>');
             document.getElementById('product-description').innerHTML = descriptionHtml;
 
-            const notesHtml = (product.Notes || '無注意事項').replace(/\n/g, '<br>');
+            // 修正 Notes 欄位，使用 JSON 中存在的 Notes 欄位
+            const notesHtml = (product.Notes || '無注意事項').replace(/\n/g, '<br>'); 
             document.getElementById('product-notes').innerHTML = notesHtml;
             
-            // 渲染輔助圖片 (Gallery Thumbs) - 使用 ColorImages
+            // =========================================================
+            // *** 修正圖片渲染邏輯 (合併 ColorImages 和 MainImages) ***
+            // =========================================================
             const galleryThumbsEl = document.getElementById('gallery-thumbs');
-            const allImages = [mainImageUrl]; // 以主圖為第一張
             
-            if (product.ColorImages) {
-                // 解析 ColorImages 欄位，例如: 白#/img/a.jpg；黑#/img/b.jpg
-                const colorImageParts = String(product.ColorImages).split('；').map(s => s.trim()).filter(s => s.length > 0);
-                
-                colorImageParts.forEach(part => {
-                    const match = part.match(/#\/(.+)/); // 找到 #/ 後面的圖片路徑
-                    if (match && match[1]) {
-                        allImages.push('/' + match[1]); // 假設路徑是 /images/xxx.jpg
-                    }
-                });
+            // 1. 建立圖片 URL 列表，並確保主圖是第一個元素
+            const allImages = [];
+            if (mainImageUrl !== defaultImage) {
+                 allImages.push(mainImageUrl);
             }
-            
+
+            // 處理圖片列表欄位 (ColorImages, MainImages)
+            const processImages = (imageList, targetArray) => {
+                 if (imageList) {
+                     const imageUrls = String(imageList)
+                         .split('；') // 使用中文分號分隔
+                         .map(s => s.trim())
+                         .filter(url => url.length > 0 && url.startsWith('http')); // 確保是有效的 URL
+                     
+                     // 過濾掉重複的圖片 (包括主圖)
+                     imageUrls.forEach(url => {
+                        if (!targetArray.includes(url)) {
+                            targetArray.push(url);
+                        }
+                     });
+                 }
+            };
+
+            processImages(product.ColorImages, allImages); 
+            processImages(product.MainImages, allImages); 
+
             // 渲染所有圖片縮圖
             if (galleryThumbsEl) {
                 let galleryHtml = '';
@@ -523,7 +543,7 @@
                     galleryHtml += `<img src="${url}" alt="${product.Name} 輔助圖片 ${index + 1}" data-full-image="${url}" class="thumb-image ${isActive}">`;
                 });
                 galleryThumbsEl.innerHTML = galleryHtml;
-                
+
                 // 設定點擊小圖換大圖的事件
                 document.querySelectorAll('.thumb-image').forEach(thumb => {
                     thumb.addEventListener('click', function() {
@@ -534,12 +554,16 @@
                 });
             }
 
-            // 渲染尺寸和庫存選項 - 使用 Sizes_Details
-            const sizesDetails = product.Sizes_Details; // 使用正確的欄位名稱
+            // =========================================================
+            // *** 修正尺寸選項解析邏輯 (使用 Sizes_Available) ***
+            // =========================================================
+            const sizesAvailable = product.Sizes_Available; // 使用 JSON 中的正確欄位名稱
             const sizeOptionsEl = document.getElementById('size-options');
-            if (sizesDetails && sizeOptionsEl) {
+            
+            if (sizesAvailable && sizeOptionsEl) {
                 // 修正解析邏輯：分隔符號是中文分號 (；)
-                const sizeParts = String(sizesDetails).split('；').map(s => s.trim()).filter(s => s.length > 0);
+                // 錯誤點修正: 變數名稱從 Available 修正為 sizesAvailable
+                const sizeParts = String(sizesAvailable).split('；').map(s => s.trim()).filter(s => s.length > 0); 
                 let optionsHtml = '';
 
                 sizeParts.forEach((part, index) => {
@@ -611,7 +635,11 @@
             );
 
             if (itemIndex > -1) {
-                // 已存在：數量加 1
+                // 已存在：數量加 1，但要確保不超過總庫存
+                if (cart[itemIndex].qty + qty > stock) {
+                    alert(`庫存僅剩 ${stock}，購物車中已有 ${cart[itemIndex].qty} 個，無法再加入。`);
+                    return;
+                }
                 cart[itemIndex].qty += qty;
             } else {
                 // 不存在：新增商品
@@ -623,7 +651,7 @@
                     code: currentProduct.Code, // 使用產品 Code 作為唯一 ID
                     qty: qty, 
                     selected: true,
-                    imageUrl: currentProduct.MainImage_URL || 'placeholder.jpg'
+                    imageUrl: currentProduct.MainImage_URL || defaultImage
                 };
                 cart.push(newItem);
             }
@@ -631,6 +659,7 @@
             // 4. 儲存購物車並給予提示
             saveCart();
             alert(`${currentProduct.Name} (尺寸: ${size}, 顏色: ${color}) 已成功加入購物車！`);
+            // 可導向購物車頁面
             // window.location.href = 'cart.html'; 
         }
 
