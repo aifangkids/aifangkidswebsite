@@ -1,168 +1,411 @@
-<script>
-    let cart = []; // 儲存購物車商品的陣列
-    const cartContentEl = document.getElementById('cart-content-area'); // 購物車主要內容區
-    const subtotalEl = document.getElementById('subtotal-amount'); // 小計
-    const totalQtyEl = document.getElementById('total-qty'); // 商品總數量
-
-    /**
-     * 從 localStorage 載入購物車資料
-     */
-    function loadCart() {
-        const cartJson = localStorage.getItem('shoppingCart');
-        cart = cartJson ? JSON.parse(cartJson) : [];
-    }
-
-    /**
-     * 將當前購物車資料儲存到 localStorage
-     */
-    function saveCart() {
-        localStorage.setItem('shoppingCart', JSON.stringify(cart));
-    }
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的購物車 - AIFANG KIDS</title>
     
-    /**
-     * 計算選中商品的總金額和小計
-     * @returns {Object} 包含 subtotal 和 totalQty
-     */
-    function calculateTotal() {
-        let subtotal = 0;
-        let totalQty = 0;
+    <style>
+        /* ------------------------------------
+            通用樣式（與您的品牌風格一致）
+        ------------------------------------ */
+        @import url('https://fonts.googleapis.com/css2?family=Huninn&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Huninn', 'Noto Sans TC', Arial, sans-serif; 
+            color: #333;
+            background-color: #fcfcfc;
+            line-height: 1.6;
+            font-size: 14px; 
+        }
         
-        cart.forEach(item => {
-            if (item.selected) {
-                subtotal += item.price * item.qty;
-                totalQty += item.qty;
-            }
-        });
-        return { subtotal, totalQty };
-    }
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
 
+        .wrapper {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
 
-    /**
-     * 渲染購物車步驟一 (清單與小計)
-     */
-    function renderStep1() {
-        if (cart.length === 0) {
-            cartContentEl.innerHTML = `
-                <div class="empty-cart">
-                    <p>您的購物車是空的。</p>
-                    <a href="index.html" class="continue-shopping-btn">繼續購物</a>
+        /* ------------------------------------
+            導航列 (Navbar)
+        ------------------------------------ */
+        #navbar {
+            background-color: #fff;
+            border-bottom: 1px solid #eee;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+        }
+
+        .logo a {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e91e63;
+        }
+
+        .nav-icons {
+            display: flex;
+            gap: 15px;
+            font-size: 18px;
+        }
+
+        .nav-icons a {
+            position: relative;
+        }
+
+        #cart-count {
+            background-color: #e91e63;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            border-radius: 50%;
+            padding: 2px 6px;
+            position: absolute;
+            top: -8px;
+            right: -10px;
+            display: none;
+        }
+
+        /* ------------------------------------
+            購物車主要內容
+        ------------------------------------ */
+        #cart-page {
+            padding: 40px 0 80px;
+        }
+
+        .cart-title {
+            font-size: 24px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #333;
+        }
+
+        /* 購物車表格 */
+        .cart-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .cart-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .cart-table th {
+            background-color: #f8f8f8;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            color: #666;
+            border-bottom: 1px solid #eee;
+        }
+
+        .cart-table td {
+            padding: 20px 15px;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+        }
+
+        /* 商品資訊列 */
+        .product-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .product-item img {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+
+        .product-info h4 {
+            font-size: 15px;
+            margin-bottom: 5px;
+        }
+
+        .product-info p {
+            font-size: 12px;
+            color: #888;
+        }
+
+        /* 數量控制 */
+        .qty-input {
+            width: 50px;
+            padding: 5px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .remove-btn {
+            color: #bbb;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .remove-btn:hover {
+            color: #e91e63;
+        }
+
+        /* 結帳區塊 */
+        .cart-summary {
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            max-width: 400px;
+            margin-left: auto;
+        }
+
+        .summary-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 15px;
+        }
+
+        .summary-line.total {
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+            font-weight: bold;
+            font-size: 18px;
+            color: #e91e63;
+        }
+
+        .checkout-btn {
+            display: block;
+            width: 100%;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 15px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+
+        .checkout-btn:hover {
+            background-color: #e91e63;
+        }
+
+        /* 空購物車狀態 */
+        .empty-cart {
+            text-align: center;
+            padding: 100px 0;
+            display: none;
+        }
+
+        .empty-cart i {
+            font-size: 50px;
+            color: #eee;
+            margin-bottom: 20px;
+        }
+
+        .go-shopping {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 25px;
+            background: #e91e63;
+            color: #fff;
+            border-radius: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .cart-table thead { display: none; }
+            .cart-table td { display: block; text-align: right; padding: 10px 15px; }
+            .cart-table td::before { content: attr(data-label); float: left; font-weight: bold; }
+            .product-item { text-align: left; }
+            .cart-summary { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <header id="navbar">
+        <div class="wrapper nav-content">
+            <div class="logo">
+                <a href="index.html">AIFANG KIDS</a>
+            </div>
+            <div class="nav-icons">
+                <a href="index.html"><i class="fas fa-home"></i></a>
+                <a href="cart.html">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span id="cart-count">0</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main id="cart-page" class="wrapper">
+        <h1 class="cart-title">購物車商品</h1>
+
+        <div id="full-cart" class="cart-container">
+            <table class="cart-table">
+                <thead>
+                    <tr>
+                        <th style="width: 45%;">商品資訊</th>
+                        <th>單價</th>
+                        <th>數量</th>
+                        <th>小計</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="cart-tbody">
+                    </tbody>
+            </table>
+
+            <div class="cart-summary">
+                <div class="summary-line">
+                    <span>商品總額</span>
+                    <span id="subtotal">TWD 0</span>
                 </div>
-            `;
-            subtotalEl.textContent = '0';
-            totalQtyEl.textContent = '0';
-            document.getElementById('select-all').checked = false;
-            return;
+                <div class="summary-line">
+                    <span>運費 (固定)</span>
+                    <span id="shipping">TWD 60</span>
+                </div>
+                <div class="summary-line total">
+                    <span>總計</span>
+                    <span id="total-price">TWD 0</span>
+                </div>
+                <a href="#" class="checkout-btn" onclick="alert('串接金流功能開發中！')">前往結帳</a>
+            </div>
+        </div>
+
+        <div id="empty-cart" class="empty-cart">
+            <i class="fas fa-shopping-basket"></i>
+            <h2>您的購物車是空的</h2>
+            <p>去挑選一些寶貝喜歡的衣服吧！</p>
+            <a href="index.html" class="go-shopping">繼續購物</a>
+        </div>
+    </main>
+
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
+    <script>
+        const SHIPPING_FEE = 60;
+        let cart = [];
+
+        // 載入購物車資料
+        function loadCart() {
+            const cartJson = localStorage.getItem('shoppingCart');
+            cart = cartJson ? JSON.parse(cartJson) : [];
+            renderCart();
+            updateCartCount();
         }
 
-        const totals = calculateTotal();
-        subtotalEl.textContent = totals.subtotal.toFixed(0);
-        totalQtyEl.textContent = totals.totalQty;
-
-        // 檢查是否所有商品都被選中
-        const allSelected = cart.every(item => item.selected);
-        document.getElementById('select-all').checked = allSelected;
-
-        let html = `
-            <ul class="cart-items-list">
-        `;
-
-        cart.forEach((item, index) => {
-            const itemTotal = item.price * item.qty;
-            html += `
-                <li class="cart-item">
-                    <div class="item-selection">
-                        <input type="checkbox" id="item-${index}" 
-                                ${item.selected ? 'checked' : ''}
-                                onchange="toggleItemSelection(${index})">
-                        <label for="item-${index}"></label>
-                    </div>
-                    <div class="item-image">
-                        <img src="${item.imageUrl}" alt="${item.name}">
-                    </div>
-                    <div class="item-details">
-                        <a href="detail.html?id=${item.code}" class="item-name">${item.name}</a>
-                        <p class="item-sku">
-                            尺寸: ${item.displaySize} / 顏色: ${item.color}
-                        </p>
-                    </div>
-                    <div class="item-price">
-                        ${item.price.toFixed(0)} TWD
-                    </div>
-                    <div class="item-qty">
-                        <button onclick="updateQty(${index}, -1)">-</button>
-                        <input type="number" value="${item.qty}" min="1" 
-                                onchange="updateQty(${index}, 0, this.value)">
-                        <button onclick="updateQty(${index}, 1)">+</button>
-                    </div>
-                    <div class="item-total">
-                        ${itemTotal.toFixed(0)} TWD
-                    </div>
-                    <div class="item-actions">
-                        <button onclick="removeItem(${index})" class="remove-btn">×</button>
-                    </div>
-                </li>
-            `;
-        });
-
-        html += '</ul>';
-        cartContentEl.innerHTML = html;
-    }
-
-    // 數量增減
-    window.updateQty = (index, delta, manualValue) => {
-        if (index < 0 || index >= cart.length) return;
-        
-        let newQty = cart[index].qty;
-        
-        if (delta !== 0) {
-            newQty += delta;
-        } else if (manualValue) {
-            newQty = parseInt(manualValue) || 1;
+        // 儲存購物車
+        function saveCart() {
+            localStorage.setItem('shoppingCart', JSON.stringify(cart));
+            updateCartCount();
         }
-        
-        if (newQty < 1) newQty = 1;
-        
-        cart[index].qty = newQty;
-        saveCart();
-        renderStep1();
-    };
 
-    // 移除單一商品
-    window.removeItem = (index) => {
-        if (confirm("確定要將此商品從購物車中移除嗎？")) {
-            cart.splice(index, 1);
+        // 更新 Navbar 數量
+        function updateCartCount() {
+            const countEl = document.getElementById('cart-count');
+            const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+            if (totalQty > 0) {
+                countEl.textContent = totalQty;
+                countEl.style.display = 'block';
+            } else {
+                countEl.style.display = 'none';
+            }
+        }
+
+        // 渲染購物車畫面
+        function renderCart() {
+            const tbody = document.getElementById('cart-tbody');
+            const fullCartDiv = document.getElementById('full-cart');
+            const emptyCartDiv = document.getElementById('empty-cart');
+
+            if (cart.length === 0) {
+                fullCartDiv.style.display = 'none';
+                emptyCartDiv.style.display = 'block';
+                return;
+            }
+
+            fullCartDiv.style.display = 'flex';
+            emptyCartDiv.style.display = 'none';
+            tbody.innerHTML = '';
+
+            let subtotal = 0;
+
+            cart.forEach((item, index) => {
+                const itemTotal = item.price * item.qty;
+                subtotal += itemTotal;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td data-label="商品資訊">
+                        <div class="product-item">
+                            <img src="${item.imageUrl}" alt="product">
+                            <div class="product-info">
+                                <h4>${item.name}</h4>
+                                <p>規格: ${item.displaySize} / ${item.color}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td data-label="單價">TWD ${item.price}</td>
+                    <td data-label="數量">
+                        <input type="number" class="qty-input" value="${item.qty}" min="1" onchange="updateQty(${index}, this.value)">
+                    </td>
+                    <td data-label="小計">TWD ${itemTotal}</td>
+                    <td>
+                        <i class="fas fa-trash-alt remove-btn" onclick="removeItem(${index})"></i>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('subtotal').textContent = `TWD ${subtotal}`;
+            document.getElementById('total-price').textContent = `TWD ${subtotal + SHIPPING_FEE}`;
+        }
+
+        // 修改數量
+        window.updateQty = function(index, newQty) {
+            newQty = parseInt(newQty);
+            if (newQty < 1) newQty = 1;
+            cart[index].qty = newQty;
             saveCart();
-            renderStep1();
-        }
-    };
+            renderCart();
+        };
 
-    // 清空購物車
-    window.clearCart = () => {
-         if (!confirm("確定要清空購物車中所有商品嗎？")) return;
-         cart = [];
-         saveCart();
-         renderStep1();
-    };
+        // 刪除商品
+        window.removeItem = function(index) {
+            if(confirm('確定要移除這項商品嗎？')) {
+                cart.splice(index, 1);
+                saveCart();
+                renderCart();
+            }
+        };
 
-    // 選取所有商品
-    window.toggleAllSelection = (checkbox) => {
-        const isChecked = checkbox.checked;
-        cart = cart.map(item => ({...item, selected: isChecked}));
-        saveCart();
-        renderStep1();
-    };
-
-    // 選取單一商品
-    window.toggleItemSelection = (index) => {
-        if (index < 0 || index >= cart.length) return;
-        cart[index].selected = !cart[index].selected;
-        saveCart();
-        renderStep1(); 
-    };
-
-    // 頁面載入時執行
-    window.onload = () => {
-        loadCart();
-        renderStep1();
-    };
-</script>
+        // 初始載入
+        window.onload = loadCart;
+    </script>
+</body>
+</html>

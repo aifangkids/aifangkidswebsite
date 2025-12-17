@@ -90,7 +90,28 @@
             gap: 15px;
             font-size: 18px;
         }
+        
+        /* *** 新增: Nav Icons 定位與購物車數量樣式 *** */
+        .nav-icons a {
+            position: relative; /* 確保 #cart-count 可以相對定位 */
+            display: inline-block;
+        }
 
+        #cart-count {
+            background-color: #e91e63;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            border-radius: 50%;
+            padding: 2px 6px;
+            position: absolute;
+            top: 5px; 
+            right: 5px; 
+            line-height: 1;
+            display: none; /* 預設隱藏，數量大於 0 時顯示 */
+            min-width: 20px; /* 確保單雙位數顯示美觀 */
+            text-align: center;
+        }
         /* ------------------------------------
             產品詳情區 (Detail)
         ------------------------------------ */
@@ -234,7 +255,6 @@
 
         /* 產品描述和資訊 */
         .product-details {
-            /* 修正: 載入後顯示，不需要預設 display: none */
             margin-top: 50px;
             border-top: 1px solid #eee;
             padding-top: 30px;
@@ -326,7 +346,9 @@
             </nav>
             <div class="nav-icons">
                 <a href="#"><i class="fas fa-search"></i></a>
-                <a href="cart.html"><i class="fas fa-shopping-cart"></i></a>
+                <a href="cart.html">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span id="cart-count"></span> </a>
                 <a href="#"><i class="fas fa-user"></i></a>
             </div>
         </div>
@@ -403,12 +425,7 @@
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
     <script>
-        // =========================================================
-        // 修正點 1: 整合您的 Google Apps Script URL
-        // =========================================================
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxj1KQbiB3Q4aJAIJDJ_LcIbddkkrBNeCS_J1Wo44JbGZW6KpjmhmHxemURciWA8p6QyA/exec'; 
-        
-        // 預設圖片（如果 MainImage_URL 為空時使用）
         const defaultImage = 'placeholder.jpg'; 
 
         let cart = []; // 購物車陣列
@@ -424,6 +441,22 @@
 
         function saveCart() {
             localStorage.setItem('shoppingCart', JSON.stringify(cart));
+        }
+
+        // *** 新增: 更新導航列購物車總數量 ***
+        function updateCartCount() {
+            const cartCountEl = document.getElementById('cart-count');
+            if (cartCountEl) {
+                // 計算購物車中所有商品的總數量
+                const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+                
+                if (totalQty > 0) {
+                    cartCountEl.textContent = totalQty;
+                    cartCountEl.style.display = 'inline-block'; // 確保顯示
+                } else {
+                    cartCountEl.style.display = 'none';
+                }
+            }
         }
         
         /**
@@ -462,7 +495,6 @@
 
         /**
          * 渲染單一產品的詳細資訊
-         * 修正點 2: 修正所有欄位名稱為大寫，並使用正確的 ID 欄位 Code
          * @param {Object} product - 產品資料物件
          */
         function renderProductDetail(product) {
@@ -482,48 +514,37 @@
             document.getElementById('product-name').textContent = product.Name || '無名稱';
             document.getElementById('product-brand').textContent = product.Brand || 'N/A';
             
-            // 價格欄位修正
             const originalPrice = parseFloat(product.Price_Original) || 0;
-            // 由於 JSON 中 Price-20%OFF 有 '-'，需要用方括號訪問
             const discountPrice = parseFloat(product['Price-20%OFF']) || 0; 
             
             document.getElementById('sale-price').textContent = discountPrice.toFixed(0) + ' TWD';
             document.getElementById('original-price').textContent = originalPrice.toFixed(0) + ' TWD';
             
-            // 主圖 URL 修正
             const mainImageEl = document.getElementById('main-image');
             const mainImageUrl = product.MainImage_URL && product.MainImage_URL.trim() !== '' ? product.MainImage_URL.trim() : defaultImage;
             mainImageEl.src = mainImageUrl;
             mainImageEl.alt = product.Name || '產品圖片';
             
-            // 描述和注意事項內容修正 (使用 JSON 中存在的欄位)
             const descriptionHtml = (product.Description || '無商品描述').replace(/\n/g, '<br>');
             document.getElementById('product-description').innerHTML = descriptionHtml;
 
-            // 修正 Notes 欄位，使用 JSON 中存在的 Notes 欄位
             const notesHtml = (product.Notes || '無注意事項').replace(/\n/g, '<br>'); 
             document.getElementById('product-notes').innerHTML = notesHtml;
             
-            // =========================================================
-            // *** 修正圖片渲染邏輯 (合併 ColorImages 和 MainImages) ***
-            // =========================================================
+            // 圖片渲染邏輯 (合併 ColorImages 和 MainImages)
             const galleryThumbsEl = document.getElementById('gallery-thumbs');
-            
-            // 1. 建立圖片 URL 列表，並確保主圖是第一個元素
             const allImages = [];
             if (mainImageUrl !== defaultImage) {
                  allImages.push(mainImageUrl);
             }
 
-            // 處理圖片列表欄位 (ColorImages, MainImages)
             const processImages = (imageList, targetArray) => {
                  if (imageList) {
                      const imageUrls = String(imageList)
-                         .split('；') // 使用中文分號分隔
+                         .split('；')
                          .map(s => s.trim())
-                         .filter(url => url.length > 0 && url.startsWith('http')); // 確保是有效的 URL
+                         .filter(url => url.length > 0 && url.startsWith('http'));
                      
-                     // 過濾掉重複的圖片 (包括主圖)
                      imageUrls.forEach(url => {
                         if (!targetArray.includes(url)) {
                             targetArray.push(url);
@@ -554,15 +575,11 @@
                 });
             }
 
-            // =========================================================
-            // *** 修正尺寸選項解析邏輯 (使用 Sizes_Available) ***
-            // =========================================================
-            const sizesAvailable = product.Sizes_Available; // 使用 JSON 中的正確欄位名稱
+            // 尺寸選項解析邏輯 (使用 Sizes_Available)
+            const sizesAvailable = product.Sizes_Available; 
             const sizeOptionsEl = document.getElementById('size-options');
             
             if (sizesAvailable && sizeOptionsEl) {
-                // 修正解析邏輯：分隔符號是中文分號 (；)
-                // 錯誤點修正: 變數名稱從 Available 修正為 sizesAvailable
                 const sizeParts = String(sizesAvailable).split('；').map(s => s.trim()).filter(s => s.length > 0); 
                 let optionsHtml = '';
 
@@ -575,7 +592,6 @@
                     const color = partsArray[1].trim(); 
                     const stock = parseInt(partsArray[2].trim()) || 0; 
 
-                    // 詳細頁面統一使用折扣價
                     const optionPrice = discountPrice; 
                     const optionId = `size-option-${index}`;
                     const isDisabled = stock <= 0; 
@@ -600,7 +616,7 @@
         }
 
         /**
-         * *** 新增：加入購物車處理函數 ***
+         * 加入購物車處理函數
          */
         function handleAddToCart() {
             if (!currentProduct) {
@@ -658,9 +674,8 @@
 
             // 4. 儲存購物車並給予提示
             saveCart();
+            updateCartCount(); // *** 修正點 2: 加入購物車後更新數量 ***
             alert(`${currentProduct.Name} (尺寸: ${size}, 顏色: ${color}) 已成功加入購物車！`);
-            // 可導向購物車頁面
-            // window.location.href = 'cart.html'; 
         }
 
         /**
@@ -680,20 +695,17 @@
                 const products = await response.json(); 
 
                 if (products && Array.isArray(products)) {
-                    // 尋找匹配 Code 的產品
                     const product = products.find(p => String(p.Code).trim() === String(productId).trim());
                     
                     if (product) {
-                        currentProduct = product; // *** 儲存當前產品資料供購物車使用 ***
+                        currentProduct = product; 
                         
-                        // 渲染頁面
                         renderProductDetail(product);
                         setupTabs(); 
                         
-                        // *** 連接「加入購物車」按鈕事件 ***
                         const addToCartBtn = document.querySelector('.add-to-cart-btn');
                         if (addToCartBtn) {
-                            addToCartBtn.removeEventListener('click', handleAddToCart); // 避免重複綁定
+                            addToCartBtn.removeEventListener('click', handleAddToCart); 
                             addToCartBtn.addEventListener('click', handleAddToCart);
                         }
 
@@ -712,7 +724,8 @@
 
         // 頁面載入時執行
         window.onload = () => {
-             loadCart(); // 先載入購物車資料
+             loadCart(); 
+             updateCartCount(); // *** 修正點 3: 頁面載入時更新數量 ***
              loadProduct();
         };
     </script>
