@@ -1,0 +1,168 @@
+<script>
+    let cart = []; // 儲存購物車商品的陣列
+    const cartContentEl = document.getElementById('cart-content-area'); // 購物車主要內容區
+    const subtotalEl = document.getElementById('subtotal-amount'); // 小計
+    const totalQtyEl = document.getElementById('total-qty'); // 商品總數量
+
+    /**
+     * 從 localStorage 載入購物車資料
+     */
+    function loadCart() {
+        const cartJson = localStorage.getItem('shoppingCart');
+        cart = cartJson ? JSON.parse(cartJson) : [];
+    }
+
+    /**
+     * 將當前購物車資料儲存到 localStorage
+     */
+    function saveCart() {
+        localStorage.setItem('shoppingCart', JSON.stringify(cart));
+    }
+    
+    /**
+     * 計算選中商品的總金額和小計
+     * @returns {Object} 包含 subtotal 和 totalQty
+     */
+    function calculateTotal() {
+        let subtotal = 0;
+        let totalQty = 0;
+        
+        cart.forEach(item => {
+            if (item.selected) {
+                subtotal += item.price * item.qty;
+                totalQty += item.qty;
+            }
+        });
+        return { subtotal, totalQty };
+    }
+
+
+    /**
+     * 渲染購物車步驟一 (清單與小計)
+     */
+    function renderStep1() {
+        if (cart.length === 0) {
+            cartContentEl.innerHTML = `
+                <div class="empty-cart">
+                    <p>您的購物車是空的。</p>
+                    <a href="index.html" class="continue-shopping-btn">繼續購物</a>
+                </div>
+            `;
+            subtotalEl.textContent = '0';
+            totalQtyEl.textContent = '0';
+            document.getElementById('select-all').checked = false;
+            return;
+        }
+
+        const totals = calculateTotal();
+        subtotalEl.textContent = totals.subtotal.toFixed(0);
+        totalQtyEl.textContent = totals.totalQty;
+
+        // 檢查是否所有商品都被選中
+        const allSelected = cart.every(item => item.selected);
+        document.getElementById('select-all').checked = allSelected;
+
+        let html = `
+            <ul class="cart-items-list">
+        `;
+
+        cart.forEach((item, index) => {
+            const itemTotal = item.price * item.qty;
+            html += `
+                <li class="cart-item">
+                    <div class="item-selection">
+                        <input type="checkbox" id="item-${index}" 
+                                ${item.selected ? 'checked' : ''}
+                                onchange="toggleItemSelection(${index})">
+                        <label for="item-${index}"></label>
+                    </div>
+                    <div class="item-image">
+                        <img src="${item.imageUrl}" alt="${item.name}">
+                    </div>
+                    <div class="item-details">
+                        <a href="detail.html?id=${item.code}" class="item-name">${item.name}</a>
+                        <p class="item-sku">
+                            尺寸: ${item.displaySize} / 顏色: ${item.color}
+                        </p>
+                    </div>
+                    <div class="item-price">
+                        ${item.price.toFixed(0)} TWD
+                    </div>
+                    <div class="item-qty">
+                        <button onclick="updateQty(${index}, -1)">-</button>
+                        <input type="number" value="${item.qty}" min="1" 
+                                onchange="updateQty(${index}, 0, this.value)">
+                        <button onclick="updateQty(${index}, 1)">+</button>
+                    </div>
+                    <div class="item-total">
+                        ${itemTotal.toFixed(0)} TWD
+                    </div>
+                    <div class="item-actions">
+                        <button onclick="removeItem(${index})" class="remove-btn">×</button>
+                    </div>
+                </li>
+            `;
+        });
+
+        html += '</ul>';
+        cartContentEl.innerHTML = html;
+    }
+
+    // 數量增減
+    window.updateQty = (index, delta, manualValue) => {
+        if (index < 0 || index >= cart.length) return;
+        
+        let newQty = cart[index].qty;
+        
+        if (delta !== 0) {
+            newQty += delta;
+        } else if (manualValue) {
+            newQty = parseInt(manualValue) || 1;
+        }
+        
+        if (newQty < 1) newQty = 1;
+        
+        cart[index].qty = newQty;
+        saveCart();
+        renderStep1();
+    };
+
+    // 移除單一商品
+    window.removeItem = (index) => {
+        if (confirm("確定要將此商品從購物車中移除嗎？")) {
+            cart.splice(index, 1);
+            saveCart();
+            renderStep1();
+        }
+    };
+
+    // 清空購物車
+    window.clearCart = () => {
+         if (!confirm("確定要清空購物車中所有商品嗎？")) return;
+         cart = [];
+         saveCart();
+         renderStep1();
+    };
+
+    // 選取所有商品
+    window.toggleAllSelection = (checkbox) => {
+        const isChecked = checkbox.checked;
+        cart = cart.map(item => ({...item, selected: isChecked}));
+        saveCart();
+        renderStep1();
+    };
+
+    // 選取單一商品
+    window.toggleItemSelection = (index) => {
+        if (index < 0 || index >= cart.length) return;
+        cart[index].selected = !cart[index].selected;
+        saveCart();
+        renderStep1(); 
+    };
+
+    // 頁面載入時執行
+    window.onload = () => {
+        loadCart();
+        renderStep1();
+    };
+</script>
