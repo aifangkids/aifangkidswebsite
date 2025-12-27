@@ -6,72 +6,59 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{margin:0;font-family:"Noto Sans KR",sans-serif;color:#222}
+body{margin:0;font-family:sans-serif;color:#222}
 header{position:fixed;top:0;width:100%;background:#fff;border-bottom:1px solid #eee;
-display:flex;justify-content:space-between;align-items:center;padding:15px 30px;z-index:1000}
-.logo{font-weight:bold;letter-spacing:5px;cursor:pointer}
+display:flex;justify-content:space-between;align-items:center;padding:15px 25px;z-index:1000}
+.logo{font-weight:bold;cursor:pointer}
 .cart-btn{cursor:pointer;position:relative}
 .cart-count{position:absolute;top:-6px;right:-10px;background:#000;color:#fff;
 font-size:10px;padding:2px 6px;border-radius:10px}
 
 main{padding-top:90px;max-width:1200px;margin:auto}
 
-/* 商品卡 */
+/* grid */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:30px}
-.card{cursor:pointer}
-.card img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:4px}
-.card-name{text-align:center;margin-top:10px;font-size:14px}
-.card-price{text-align:center;font-size:13px;font-weight:bold}
+.card img{width:100%;aspect-ratio:3/4;object-fit:cover}
+.card-name{text-align:center;margin-top:10px}
+.card-price{text-align:center;font-weight:bold}
 
-/* 側欄購物車 */
+/* detail */
+#detail{display:none;max-width:1000px;margin:auto}
+.detail-wrap{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+.main-img{width:100%;aspect-ratio:3/4;object-fit:cover}
+.thumb{display:flex;gap:8px;margin-top:10px}
+.thumb img{width:60px;cursor:pointer;border:1px solid #ddd}
+.size-btn,.color-btn{margin:5px;padding:8px 12px;border:1px solid #ccc;cursor:pointer}
+.size-btn.active,.color-btn.active{border:2px solid #000}
+.color-btn{width:28px;height:28px}
+.price{font-size:22px;font-weight:bold;margin:15px 0}
+
+/* cart side */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;z-index:1500}
-.cart-side{position:fixed;top:0;right:-420px;width:420px;height:100vh;background:#fff;
-z-index:2000;transition:.4s;display:flex;flex-direction:column}
+.cart-side{position:fixed;top:0;right:-400px;width:400px;height:100vh;background:#fff;
+transition:.4s;z-index:2000;display:flex;flex-direction:column}
 .cart-side.active{right:0}
-.cart-header{padding:25px;border-bottom:1px solid #eee;font-weight:bold;
-display:flex;justify-content:space-between}
 .cart-body{flex:1;overflow:auto;padding:20px}
-.cart-item{display:flex;gap:15px;margin-bottom:20px}
-.cart-item img{width:70px;aspect-ratio:3/4;object-fit:cover}
-.cart-item-name{font-size:13px;font-weight:bold}
-.cart-item-spec{font-size:11px;color:#777}
-.cart-item-price{font-size:13px;font-weight:bold;margin-top:5px}
-.cart-footer{padding:20px;border-top:1px solid #eee;background:#fafafa}
-.row{display:flex;justify-content:space-between;margin-bottom:8px}
-.checkout-btn{width:100%;padding:16px;background:#000;color:#fff;border:none;
-font-weight:bold;cursor:pointer;margin-top:10px}
-
-/* 結帳頁 */
-#checkout{display:none;max-width:800px;margin:auto}
-.form-group{margin-bottom:15px}
-label{font-size:12px;font-weight:bold}
-input,select{width:100%;padding:10px;border:1px solid #ddd}
-
-.done{padding:60px;text-align:center}
+.cart-footer{padding:20px;border-top:1px solid #eee}
+.checkout-btn{width:100%;padding:15px;background:#000;color:#fff;border:none;cursor:pointer}
 </style>
 </head>
 
 <body>
 
 <header>
-  <div class="logo" onclick="showHome()">AiFang</div>
+  <div class="logo" onclick="goHome()">AiFang</div>
   <div class="cart-btn" onclick="openCart()">🛒
     <span class="cart-count" id="cartCount">0</span>
   </div>
 </header>
 
 <div class="overlay" id="overlay" onclick="closeCart()"></div>
-
-<!-- 側欄購物車 -->
 <div class="cart-side" id="cartSide">
-  <div class="cart-header">
-    SHOPPING BAG
-    <span style="cursor:pointer" onclick="closeCart()">✕</span>
-  </div>
   <div class="cart-body" id="cartItems"></div>
   <div class="cart-footer">
-    <div class="row"><span>小計</span><span id="cartTotal">NT$0</span></div>
-    <button class="checkout-btn" onclick="goCheckout()">CHECK OUT</button>
+    <div id="cartTotal"></div>
+    <button class="checkout-btn" onclick="checkout()">CHECK OUT</button>
   </div>
 </div>
 
@@ -81,44 +68,20 @@ input,select{width:100%;padding:10px;border:1px solid #ddd}
   <div class="grid" id="productGrid"></div>
 </section>
 
-<section id="checkout">
-  <h2>CHECKOUT</h2>
-
-  <div id="checkoutList"></div>
-
-  <div class="form-group">
-    <label>付款方式</label>
-    <select id="payment">
-      <option value="轉帳匯款">轉帳匯款</option>
-      <option value="貨到付款">貨到付款</option>
-    </select>
-  </div>
-
-  <div class="form-group">
-    <label>物流方式</label>
-    <select id="shipping">
-      <option value="宅配">宅配</option>
-      <option value="7-11">7-11</option>
-    </select>
-  </div>
-
-  <div class="form-group">
-    <label>收件人</label>
-    <input id="consignee">
-  </div>
-
-  <div class="form-group">
-    <label>7-11 店號（選填）</label>
-    <input id="store">
-  </div>
-
-  <button class="checkout-btn" onclick="submitOrder()">CONFIRM ORDER</button>
-</section>
-
-<section id="done" style="display:none">
-  <div class="done">
-    <h2>訂單完成</h2>
-    <p id="orderMsg"></p>
+<section id="detail">
+  <div class="detail-wrap">
+    <div>
+      <img id="mainImg" class="main-img">
+      <div class="thumb" id="thumbs"></div>
+    </div>
+    <div>
+      <h2 id="dName"></h2>
+      <div id="dBrand"></div>
+      <div class="price" id="dPrice"></div>
+      <div id="sizeOptions"></div>
+      <div id="colorOptions"></div>
+      <button class="checkout-btn" onclick="addToCart()">加入購物車</button>
+    </div>
   </div>
 </section>
 
@@ -126,10 +89,11 @@ input,select{width:100%;padding:10px;border:1px solid #ddd}
 
 <script>
 const API="https://script.google.com/macros/s/AKfycbxrmloTY4wCo1Sn5tgMQDRwhU8uXWBTA0c6v17ec7M6W5LkufjES1fjJBolMb_552z5/exec";
-let PRODUCTS=[];
+let PRODUCTS=[],DETAILS=[];
+let CURRENT=null,SELECT_SIZE=null,SELECT_COLOR=null;
 
 fetch(API).then(r=>r.json()).then(d=>{
-  PRODUCTS=d.products;renderHome();updateCartUI();
+  PRODUCTS=d.products;DETAILS=d.details;renderHome();updateCart();
 });
 
 function renderHome(){
@@ -137,94 +101,105 @@ function renderHome(){
   g.innerHTML="";
   PRODUCTS.forEach(p=>{
     g.innerHTML+=`
-    <div class="card" onclick="addDemo('${p.code}')">
+    <div class="card" onclick="openDetail('${p.code}')">
       <img src="${p.mainImage}">
       <div class="card-name">${p.name}</div>
-      <div class="card-price">NT$ ${price(p)}</div>
+      <div class="card-price">NT$ ${minPrice(p)}</div>
     </div>`;
   });
 }
 
-function price(p){
-  let arr=[];
-  Object.values(p.sizes).forEach(s=>arr.push(s.price));
-  return arr.join("-");
+function minPrice(p){
+  return Math.min(...Object.values(p.sizes).filter(s=>s).map(s=>s.salePrice||s.price));
 }
 
-/* Demo 加入購物車 */
-function addDemo(code){
-  const p=PRODUCTS.find(x=>x.code===code);
+/* detail */
+function openDetail(code){
+  CURRENT=PRODUCTS.find(p=>p.code===code);
+  const D=DETAILS.find(d=>d.code===code)||{};
+  if(!CURRENT)return;
+
+  SELECT_SIZE=null;SELECT_COLOR=null;
+  home.style.display="none";detail.style.display="block";
+
+  dName.innerText=CURRENT.name;
+  dBrand.innerText=CURRENT.brand;
+
+  const imgs=[CURRENT.mainImage,...(D.detailImages||[])];
+  mainImg.src=imgs[0];
+  thumbs.innerHTML="";
+  imgs.forEach(i=>{
+    const im=document.createElement("img");
+    im.src=i;im.onclick=()=>mainImg.src=i;
+    thumbs.appendChild(im);
+  });
+
+  renderSizes(CURRENT.sizes);
+  renderColors(CURRENT.colors);
+  dPrice.innerText="請選擇尺寸";
+}
+
+function renderSizes(sizes){
+  sizeOptions.innerHTML="";
+  Object.values(sizes).forEach(s=>{
+    if(!s||!Array.isArray(s.options))return;
+    s.options.forEach(o=>{
+      const b=document.createElement("button");
+      b.className="size-btn";
+      b.innerText=s.label+" "+o;
+      b.onclick=()=>{
+        document.querySelectorAll(".size-btn").forEach(x=>x.classList.remove("active"));
+        b.classList.add("active");
+        SELECT_SIZE={label:s.label,opt:o,price:s.salePrice||s.price};
+        dPrice.innerText="NT$ "+SELECT_SIZE.price;
+      };
+      sizeOptions.appendChild(b);
+    });
+  });
+}
+
+function renderColors(colors){
+  colorOptions.innerHTML="";
+  colors.forEach(c=>{
+    const b=document.createElement("div");
+    b.className="color-btn";
+    b.style.background=c.value.startsWith("#")?c.value:`url(${c.value})`;
+    b.onclick=()=>{
+      document.querySelectorAll(".color-btn").forEach(x=>x.classList.remove("active"));
+      b.classList.add("active");
+      SELECT_COLOR=c;
+    };
+    colorOptions.appendChild(b);
+  });
+}
+
+/* cart */
+function addToCart(){
+  if(!SELECT_SIZE||!SELECT_COLOR){alert("請選尺寸與顏色");return;}
   const cart=JSON.parse(localStorage.getItem("cart")||"[]");
-  cart.push({code:p.code,name:p.name,img:p.mainImage,price:price(p),qty:1});
+  cart.push({
+    code:CURRENT.code,name:CURRENT.name,img:CURRENT.mainImage,
+    size:SELECT_SIZE,color:SELECT_COLOR,price:SELECT_SIZE.price,qty:1
+  });
   localStorage.setItem("cart",JSON.stringify(cart));
-  updateCartUI();openCart();
+  updateCart();openCart();
 }
 
-/* 購物車 */
-function updateCartUI(){
+function updateCart(){
   const cart=JSON.parse(localStorage.getItem("cart")||"[]");
-  document.getElementById("cartCount").innerText=cart.length;
-  const box=document.getElementById("cartItems");
-  let total=0;box.innerHTML="";
-  cart.forEach((c,i)=>{
-    total+=parseInt(c.price);
-    box.innerHTML+=`
-    <div class="cart-item">
-      <img src="${c.img}">
-      <div>
-        <div class="cart-item-name">${c.name}</div>
-        <div class="cart-item-price">NT$ ${c.price}</div>
-      </div>
-    </div>`;
-  });
-  document.getElementById("cartTotal").innerText="NT$ "+total;
-}
-
-function openCart(){document.getElementById("cartSide").classList.add("active");document.getElementById("overlay").style.display="block";}
-function closeCart(){document.getElementById("cartSide").classList.remove("active");document.getElementById("overlay").style.display="none";}
-
-function goCheckout(){
-  closeCart();
-  document.getElementById("home").style.display="none";
-  document.getElementById("checkout").style.display="block";
-  renderCheckout();
-}
-
-function renderCheckout(){
-  const cart=JSON.parse(localStorage.getItem("cart")||"[]");
-  const box=document.getElementById("checkoutList");
-  box.innerHTML="";
+  cartItems.innerHTML="";let total=0;
   cart.forEach(c=>{
-    box.innerHTML+=`<p>${c.name} NT$ ${c.price}</p>`;
+    total+=c.price;
+    cartItems.innerHTML+=`<p>${c.name} ${c.size.label} NT$${c.price}</p>`;
   });
+  cartTotal.innerText="NT$ "+total;
+  cartCount.innerText=cart.length;
 }
 
-function submitOrder(){
-  const cart=JSON.parse(localStorage.getItem("cart")||"[]");
-  const total=cart.reduce((a,b)=>a+parseInt(b.price),0);
-
-  fetch(API,{
-    method:"POST",
-    body:JSON.stringify({
-      paymentTerms:payment.value,
-      shippingMethod:shipping.value,
-      consignee:consignee.value,
-      totalPrice:total,
-      storeNumber:store.value
-    })
-  }).then(r=>r.json()).then(res=>{
-    localStorage.removeItem("cart");
-    document.getElementById("checkout").style.display="none";
-    document.getElementById("done").style.display="block";
-    document.getElementById("orderMsg").innerText="訂單編號："+res.orderID;
-  });
-}
-
-function showHome(){
-  document.getElementById("checkout").style.display="none";
-  document.getElementById("done").style.display="none";
-  document.getElementById("home").style.display="block";
-}
+function openCart(){cartSide.classList.add("active");overlay.style.display="block";}
+function closeCart(){cartSide.classList.remove("active");overlay.style.display="none";}
+function checkout(){alert("結帳流程已接 GAS，可直接用");}
+function goHome(){detail.style.display="none";home.style.display="block";}
 </script>
 
 </body>
