@@ -2,205 +2,53 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>AiFang Kids Studio</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-body{margin:0;font-family:sans-serif;color:#222}
-header{position:fixed;top:0;width:100%;background:#fff;border-bottom:1px solid #eee;
-display:flex;justify-content:space-between;align-items:center;padding:15px 25px;z-index:1000}
-.logo{font-weight:bold;cursor:pointer}
-.cart-btn{cursor:pointer;position:relative}
-.cart-count{position:absolute;top:-6px;right:-10px;background:#000;color:#fff;
-font-size:10px;padding:2px 6px;border-radius:10px}
-
-main{padding-top:90px;max-width:1200px;margin:auto}
-
-/* grid */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:30px}
-.card img{width:100%;aspect-ratio:3/4;object-fit:cover}
-.card-name{text-align:center;margin-top:10px}
-.card-price{text-align:center;font-weight:bold}
-
-/* detail */
-#detail{display:none;max-width:1000px;margin:auto}
-.detail-wrap{display:grid;grid-template-columns:1fr 1fr;gap:40px}
-.main-img{width:100%;aspect-ratio:3/4;object-fit:cover}
-.thumb{display:flex;gap:8px;margin-top:10px}
-.thumb img{width:60px;cursor:pointer;border:1px solid #ddd}
-.size-btn,.color-btn{margin:5px;padding:8px 12px;border:1px solid #ccc;cursor:pointer}
-.size-btn.active,.color-btn.active{border:2px solid #000}
-.color-btn{width:28px;height:28px}
-.price{font-size:22px;font-weight:bold;margin:15px 0}
-
-/* cart side */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;z-index:1500}
-.cart-side{position:fixed;top:0;right:-400px;width:400px;height:100vh;background:#fff;
-transition:.4s;z-index:2000;display:flex;flex-direction:column}
-.cart-side.active{right:0}
-.cart-body{flex:1;overflow:auto;padding:20px}
-.cart-footer{padding:20px;border-top:1px solid #eee}
-.checkout-btn{width:100%;padding:15px;background:#000;color:#fff;border:none;cursor:pointer}
-</style>
+<title>AiFang Studio | Home</title>
+<link rel="stylesheet" href="css/style.css">
 </head>
-
 <body>
 
-<header>
-  <div class="logo" onclick="goHome()">AiFang</div>
-  <div class="cart-btn" onclick="openCart()">🛒
-    <span class="cart-count" id="cartCount">0</span>
-  </div>
+<header id="main-header">
+    <div class="menu-icon" onclick="toggleMenu(true)">☰</div>
+    <div class="logo">AiFang Studio</div>
+    <div class="cart-icon" onclick="toggleCart()">🛒 <span id="cartCount">0</span></div>
 </header>
 
-<div class="overlay" id="overlay" onclick="closeCart()"></div>
-<div class="cart-side" id="cartSide">
-  <div class="cart-body" id="cartItems"></div>
-  <div class="cart-footer">
-    <div id="cartTotal"></div>
-    <button class="checkout-btn" onclick="checkout()">CHECK OUT</button>
-  </div>
+<div class="nav-overlay" id="overlay" onclick="closeAll()"></div>
+
+<div class="side-nav" id="left-menu"></div>
+<div class="side-nav" id="right-cart"></div>
+
+<div id="page-index">
+    <section class="hero"></section>
+
+    <div class="section-title">NEW ARRIVALS</div>
+    <div class="grid-2col" id="newArrivals"></div>
+
+    <div class="section-title">COLLECTION</div>
+    <div class="grid-4col" id="collection"></div>
 </div>
 
-<main>
+<div id="page-detail" style="display:none;"></div>
 
-<section id="home">
-  <div class="grid" id="productGrid"></div>
-</section>
-
-<section id="detail">
-  <div class="detail-wrap">
-    <div>
-      <img id="mainImg" class="main-img">
-      <div class="thumb" id="thumbs"></div>
+<footer>
+    <div class="footer-grid">
+        <div><strong>AiFang Studio</strong><br>CUSTOMER CENTER<br>02-1234-5678</div>
+        <div><strong>ABOUT</strong><br>Brand Story<br>Terms<br>Privacy</div>
+        <div><strong>GUIDE</strong><br>Shopping Guide<br>Shipping<br>Size Table</div>
+        <div><strong>SOCIAL</strong><br>Instagram<br>Line Channel</div>
     </div>
-    <div>
-      <h2 id="dName"></h2>
-      <div id="dBrand"></div>
-      <div class="price" id="dPrice"></div>
-      <div id="sizeOptions"></div>
-      <div id="colorOptions"></div>
-      <button class="checkout-btn" onclick="addToCart()">加入購物車</button>
-    </div>
-  </div>
-</section>
+</footer>
 
-</main>
+<div class="quick-btm">
+    <div class="btm-btn" onclick="window.scrollTo({top:0, behavior:'smooth'})">TOP</div>
+    <div class="btm-btn" style="background:#06C755; color:#fff; border:none;">LINE</div>
+</div>
 
-<script>
-const API="https://script.google.com/macros/s/AKfycbxrmloTY4wCo1Sn5tgMQDRwhU8uXWBTA0c6v17ec7M6W5LkufjES1fjJBolMb_552z5/exec";
-let PRODUCTS=[],DETAILS=[];
-let CURRENT=null,SELECT_SIZE=null,SELECT_COLOR=null;
-
-fetch(API).then(r=>r.json()).then(d=>{
-  PRODUCTS=d.products;DETAILS=d.details;renderHome();updateCart();
-});
-
-function renderHome(){
-  const g=document.getElementById("productGrid");
-  g.innerHTML="";
-  PRODUCTS.forEach(p=>{
-    g.innerHTML+=`
-    <div class="card" onclick="openDetail('${p.code}')">
-      <img src="${p.mainImage}">
-      <div class="card-name">${p.name}</div>
-      <div class="card-price">NT$ ${minPrice(p)}</div>
-    </div>`;
-  });
-}
-
-function minPrice(p){
-  return Math.min(...Object.values(p.sizes).filter(s=>s).map(s=>s.salePrice||s.price));
-}
-
-/* detail */
-function openDetail(code){
-  CURRENT=PRODUCTS.find(p=>p.code===code);
-  const D=DETAILS.find(d=>d.code===code)||{};
-  if(!CURRENT)return;
-
-  SELECT_SIZE=null;SELECT_COLOR=null;
-  home.style.display="none";detail.style.display="block";
-
-  dName.innerText=CURRENT.name;
-  dBrand.innerText=CURRENT.brand;
-
-  const imgs=[CURRENT.mainImage,...(D.detailImages||[])];
-  mainImg.src=imgs[0];
-  thumbs.innerHTML="";
-  imgs.forEach(i=>{
-    const im=document.createElement("img");
-    im.src=i;im.onclick=()=>mainImg.src=i;
-    thumbs.appendChild(im);
-  });
-
-  renderSizes(CURRENT.sizes);
-  renderColors(CURRENT.colors);
-  dPrice.innerText="請選擇尺寸";
-}
-
-function renderSizes(sizes){
-  sizeOptions.innerHTML="";
-  Object.values(sizes).forEach(s=>{
-    if(!s||!Array.isArray(s.options))return;
-    s.options.forEach(o=>{
-      const b=document.createElement("button");
-      b.className="size-btn";
-      b.innerText=s.label+" "+o;
-      b.onclick=()=>{
-        document.querySelectorAll(".size-btn").forEach(x=>x.classList.remove("active"));
-        b.classList.add("active");
-        SELECT_SIZE={label:s.label,opt:o,price:s.salePrice||s.price};
-        dPrice.innerText="NT$ "+SELECT_SIZE.price;
-      };
-      sizeOptions.appendChild(b);
-    });
-  });
-}
-
-function renderColors(colors){
-  colorOptions.innerHTML="";
-  colors.forEach(c=>{
-    const b=document.createElement("div");
-    b.className="color-btn";
-    b.style.background=c.value.startsWith("#")?c.value:`url(${c.value})`;
-    b.onclick=()=>{
-      document.querySelectorAll(".color-btn").forEach(x=>x.classList.remove("active"));
-      b.classList.add("active");
-      SELECT_COLOR=c;
-    };
-    colorOptions.appendChild(b);
-  });
-}
-
-/* cart */
-function addToCart(){
-  if(!SELECT_SIZE||!SELECT_COLOR){alert("請選尺寸與顏色");return;}
-  const cart=JSON.parse(localStorage.getItem("cart")||"[]");
-  cart.push({
-    code:CURRENT.code,name:CURRENT.name,img:CURRENT.mainImage,
-    size:SELECT_SIZE,color:SELECT_COLOR,price:SELECT_SIZE.price,qty:1
-  });
-  localStorage.setItem("cart",JSON.stringify(cart));
-  updateCart();openCart();
-}
-
-function updateCart(){
-  const cart=JSON.parse(localStorage.getItem("cart")||"[]");
-  cartItems.innerHTML="";let total=0;
-  cart.forEach(c=>{
-    total+=c.price;
-    cartItems.innerHTML+=`<p>${c.name} ${c.size.label} NT$${c.price}</p>`;
-  });
-  cartTotal.innerText="NT$ "+total;
-  cartCount.innerText=cart.length;
-}
-
-function openCart(){cartSide.classList.add("active");overlay.style.display="block";}
-function closeCart(){cartSide.classList.remove("active");overlay.style.display="none";}
-function checkout(){alert("結帳流程已接 GAS，可直接用");}
-function goHome(){detail.style.display="none";home.style.display="block";}
-</script>
-
+<script src="js/api.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/index.js"></script>
+<script src="js/detail.js"></script>
+<script src="js/checkout.js"></script>
 </body>
 </html>
