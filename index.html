@@ -5,6 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AiFang Kids - 商品列表</title>
 <link rel="stylesheet" href="assets/css/style.css">
+<style>
+#left-menu { width: 220px; float:left; border-right:1px solid #ddd; padding:10px; }
+.category { cursor:pointer; padding:5px; background:#f0f0f0; margin-bottom:2px; display:flex; justify-content:space-between; align-items:center; transition:0.3s; }
+.category:hover { background:#e0e0e0; }
+.brand-list { display:none; margin-left:15px; transition: all 0.3s ease; }
+.brand-item { cursor:pointer; padding:3px 0; display:flex; align-items:center; }
+.brand-item input { margin-right:5px; }
+.product-container { margin-left:240px; display:flex; flex-wrap:wrap; }
+.product-card { width:200px; border:1px solid #ddd; margin:10px; padding:10px; cursor:pointer; position:relative; transition:0.3s; }
+.product-card:hover { box-shadow:0 0 10px rgba(0,0,0,0.2); }
+.product-card .brand { position:absolute; top:5px; left:5px; background:#fff; color:#000; padding:2px 5px; font-size:12px; }
+.product-card .colors span { width:15px; height:15px; border-radius:50%; display:inline-block; margin-right:3px; border:1px solid #ccc; }
+#cart-preview { position:fixed; right:0; top:50px; width:200px; background:#f9f9f9; padding:10px; border-left:1px solid #ddd; max-height:80vh; overflow-y:auto; }
+</style>
 </head>
 <body>
 
@@ -18,17 +32,14 @@
     <div id="category-list"></div>
   </aside>
 
-  <section id="product-list">
-    <!-- 商品卡片自動生成 -->
-  </section>
+  <section class="product-container" id="product-list"></section>
 
-  <aside id="cart-preview">
-    <!-- 側欄購物車 -->
-  </aside>
+  <aside id="cart-preview"></aside>
 </main>
 
-<script type="module" src="assets/js/index.js"></script>
-<script type="module" src="assets/js/cart.js"></script>
 <script type="module" src="assets/js/api.js"></script>
+<script type="module" src="assets/js/cart.js"></script>
+<script type="module" src="assets/js/index.js"></script>
+
 </body>
 </html>
