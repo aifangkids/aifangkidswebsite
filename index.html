@@ -1,392 +1,125 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AiFangKids 選品 - All</title>
+// --- 核心配置 ---
+const API_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLgCo9EajvenCtLsxrhtmJTYmZZdd7gHEkNxMOUyVUaui8W3_gKifiXByfR2zvjMgLg_XkRVhB-1_U1vvPSRnrNMIhA0mppvvyjeTpw4QcXsIXZGDokR_3xd56AVsJSOkdtbgCqGKL9oF1AlMWFvNbBl2nsE6ydj3CkNHbjdChZLSqFKYdrCOODWZ7Jdy0DFrp9ZGdaGe1MTBXvzbLduZq0XReD3riS97NFG0I-l76aAAfCeG006O2SBPV7oF994r4nwUYwA79gE4flO0iA7xzWbSI67QQ&lib=Mc6w9ccL94SXtnTspuIvQiP6P3xwH8FnN";
+
+let allData = { products: [], details: [] };
+
+// --- 視圖管理 ---
+function showView(id) {
+    document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+}
+
+function openNav(id) {
+    document.getElementById(id).classList.add('active');
+    document.getElementById('overlay').style.display = 'block';
+}
+
+function closeAll() {
+    document.querySelectorAll('.side-nav').forEach(s => s.classList.remove('active'));
+    document.getElementById('overlay').style.display = 'none';
+}
+
+function toggleSub(id) {
+    document.getElementById(id).classList.toggle('active');
+}
+
+// --- 1. 初始化：抓取 API 數據 ---
+async function initApp() {
+    try {
+        const response = await fetch(API_URL);
+        allData = await response.json();
+        console.log("✅ 數據載入成功:", allData);
+        
+        renderProductList(allData.products);
+        renderFilters(allData.products);
+    } catch (error) {
+        console.error("❌ API 載入失敗:", error);
+    }
+}
+
+// --- 2. 渲染首頁列表 ---
+function renderProductList(products) {
+    const listContainer = document.querySelector('#page-index > div:last-child');
+    if (!listContainer) return;
+
+    listContainer.innerHTML = products.map(p => `
+        <div class="p-card" onclick="loadProductDetail('${p.code}')">
+            <img src="${p.mainImage}" style="width:100%; aspect-ratio:1/1; object-fit:cover;">
+            <div style="text-align:center; padding:15px;">
+                <div style="font-size:12px; color:#888;">${p.brand}</div>
+                <div style="font-size:14px; margin:5px 0;">${p.name}</div>
+                <div style="font-weight:bold;">NT$ ${p.sizes.bebe.salePrice} UP</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// --- 3. 載入商品詳情 (由首頁點擊觸發) ---
+function loadProductDetail(code) {
+    // 從 details 分頁中找對應 code
+    const detail = allData.details.find(d => d.code === code);
+    if (!detail) return;
+
+    const container = document.getElementById('page-detail');
     
-    <style>
-        /* ------------------------------------
-            通用重置與字體設定 (粉圓體)
-        ------------------------------------ */
-        @import url('https://fonts.googleapis.com/css2?family=Huninn&display=swap');
+    // 渲染尺寸按鈕 (活用 BEBE, KIDS, JUNIOR 價格)
+    let sizeButtonsHTML = "";
+    if (detail.sizes.bebe) sizeButtonsHTML += `<button class="s-btn baby" onclick="selectPrice(this, '${detail.sizes.bebe.salePrice}')">BEBE (${detail.sizes.bebe.options})<br><strong>NT$ ${detail.sizes.bebe.salePrice}</strong></button>`;
+    if (detail.sizes.kids) sizeButtonsHTML += `<button class="s-btn kids" onclick="selectPrice(this, '${detail.sizes.kids.salePrice}')">KIDS (${detail.sizes.kids.options})<br><strong>NT$ ${detail.sizes.kids.salePrice}</strong></button>`;
+    if (detail.sizes.junior) sizeButtonsHTML += `<button class="s-btn junior" onclick="selectPrice(this, '${detail.sizes.junior.salePrice}')">JUNIOR (${detail.sizes.junior.options})<br><strong>NT$ ${detail.sizes.junior.salePrice}</strong></button>`;
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+    // 渲染詳情圖 (由 detailurl1 ~ 15)
+    const detailImagesHTML = detail.detailImages.map(img => `<img src="${img}" style="width:100%; margin-bottom:10px;">`).join('');
 
-        body {
-            font-family: 'Huninn', 'Noto Sans TC', Arial, sans-serif; 
-            color: #333;
-            background-color: #fff;
-            line-height: 1.5;
-            font-size: 14px; 
-        }
-        
-        a {
-            text-decoration: none;
-            color: inherit;
-        }
+    container.innerHTML = `
+        <div class="detail-container">
+            <div style="flex:1.2;">
+                <img src="${allData.products.find(p=>p.code===code).mainImage}" style="width:100%;">
+                <div style="margin-top:30px;">${detailImagesHTML}</div>
+            </div>
+            <div style="flex:1; position:sticky; top:120px; height:fit-content;">
+                <div style="border:1.5px solid #000; display:inline-block; padding:3px 12px; font-size:11px; font-weight:bold;">${detail.brand}</div>
+                <h1 style="font-size:26px; margin:15px 0;">${detail.name}</h1>
+                <p style="font-size:13px; color:#666; line-height:1.8;">${detail.description}</p>
+                <p style="font-size:12px; color:#999;">材質: ${detail.material}</p>
+                
+                <div class="color-dots">
+                    ${detail.colors.map(c => `<div class="dot" style="${c.value.startsWith('#') ? 'background:'+c.value : 'background:url('+c.value+') center/cover'}" title="${c.name}"></div>`).join('')}
+                </div>
 
-        ul {
-            list-style: none;
-        }
-        
-        button {
-            border: none;
-            background: none;
-            cursor: pointer;
-            padding: 0;
-            color: inherit;
-            font-family: inherit;
-        }
+                <div id="active-price" style="font-size:24px; font-weight:700; margin:20px 0;">NT$ ${detail.sizes.bebe.salePrice}</div>
 
-        .wrapper {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 15px;
-        }
+                <div class="styling-btn" onclick="alert('${detail.stylingtips}')">✨ Styling Tips</div>
 
-        /* ------------------------------------
-            導航列 (Navbar)
-        ------------------------------------ */
-        #navbar {
-            background-color: #fff;
-            border-bottom: 1px solid #eee;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
+                <div style="margin-top:30px;">
+                    <p style="font-size:12px; font-weight:bold;">SELECT SIZE & PRICE</p>
+                    <div class="size-btns">${sizeButtonsHTML}</div>
+                </div>
 
-        .nav-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 60px;
-        }
-
-        .logo a {
-            font-size: 24px;
-            font-weight: bold;
-            color: #e91e63; /* 亮粉紅色系 */
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 25px;
-        }
-
-        .nav-links a {
-            text-transform: uppercase;
-            font-size: 14px;
-            padding: 5px 0;
-            position: relative;
-        }
-
-        .nav-links a:hover::after,
-        .nav-links a.active::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            bottom: -5px;
-            width: 100%;
-            height: 2px;
-            background-color: #e91e63;
-        }
-
-        .nav-icons {
-            display: flex;
-            gap: 15px;
-            font-size: 18px;
-        }
-
-        /* ------------------------------------
-            主內容區 (Main Content)
-        ------------------------------------ */
-        #main-content {
-            padding: 40px 0;
-        }
-
-        .product-list-container {
-            margin-top: 30px;
-        }
-
-        .product-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-        }
-
-        .product-item {
-            text-align: center;
-            padding: 10px;
-            border: 1px solid #f0f0f0;
-            transition: box-shadow 0.3s;
-        }
-
-        .product-item:hover {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .product-image img {
-            width: 100%;
-            height: auto;
-            display: block;
-            margin-bottom: 10px;
-        }
-
-        .product-name {
-            display: block;
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #333;
-        }
-
-        .price-box {
-            margin-top: 5px;
-            font-size: 14px;
-        }
-
-        .original-price {
-            color: #999;
-            text-decoration: line-through;
-            margin-right: 10px;
-        }
-
-        .discount-price {
-            color: #e91e63;
-            font-weight: bold;
-            font-size: 16px;
-        }
-        
-        .color-swatches {
-            display: flex;
-            justify-content: center;
-            gap: 5px;
-            margin-bottom: 5px;
-            height: 15px; /* 確保高度一致 */
-        }
-        
-        .swatch {
-            display: block;
-            width: 15px;
-            height: 15px;
-            border-radius: 50%;
-            border: 1px solid #ccc;
-        }
-
-        /* ------------------------------------
-            Footer
-        ------------------------------------ */
-        #footer {
-            background-color: #333;
-            color: #fff;
-            padding: 30px 0;
-            margin-top: 50px;
-        }
-
-        .footer-cols {
-            display: flex;
-            justify-content: space-between;
-            gap: 30px;
-            margin-bottom: 20px;
-            font-size: 13px;
-        }
-
-        .footer-cols h3 {
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-
-        .copyright {
-            border-top: 1px solid #555;
-            padding-top: 15px;
-            text-align: center;
-            font-size: 12px;
-        }
-    </style>
-</head>
-<body>
+                <button class="btn-black" style="margin-top:40px; width:100%; padding:20px; background:#000; color:#fff; border:none; font-weight:bold; cursor:pointer;" onclick="openNav('right-cart')">ADD TO SHOPPING BAG</button>
+            </div>
+        </div>
+    `;
     
-    <header id="navbar">
-        <div class="wrapper nav-content">
-            <div class="logo">
-                <a href="index.html">AIFANG KIDS</a>
-            </div>
-            <nav class="nav-links">
-                <a href="index.html" class="active">ALL</a>
-                <a href="#">上衣</a>
-                <a href="#">下著</a>
-                <a href="#">外套</a>
-            </nav>
-            <div class="nav-icons">
-                <a href="#"><i class="fas fa-search"></i></a>
-                <a href="cart.html"><i class="fas fa-shopping-cart"></i></a>
-                <a href="#"><i class="fas fa-user"></i></a>
-            </div>
-        </div>
-    </header>
+    showView('page-detail');
+}
 
-    <div id="main-content">
-        <div class="wrapper">
-            <h2>所有產品</h2>
-            
-            <div class="product-list-container">
-                <ul class="product-list" id="product-list">
-                    <li>載入產品中...</li> 
-                </ul>
-            </div>
-            
-        </div>
-    </div>
+// 切換價格顯示
+function selectPrice(btn, price) {
+    document.querySelectorAll('.s-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('active-price').innerText = `NT$ ${price}`;
+}
 
-    <footer id="footer">
-        <div class="wrapper footer-cols">
-            <div class="customer-center">
-                <h3>CUSTOMER CENTER</h3>
-                <p>MAIL: aifangkids@gmail.com</p>
-                <p>服務時間: AM 10:00 - PM 21:00</p>
-                <p>週末與國定假日休息，訂單及出貨將於工作日為您處理</p>
-            </div>
-            <div class="company-info">
-                <h3>COMPANY INFO</h3>
-                <p>公司名稱: 璦坊童裝</p>
-                <p>統一編號: 95294390</p>
-            </div>
-        </div>
-        <div class="copyright wrapper">
-            <p>Copyright © **Aifang Kids Studio** All rights reserved.</p>
-        </div>
-    </footer>
+// --- 4. 側邊欄品牌篩選器 (從 Products 提取品牌) ---
+function renderFilters(products) {
+    const brands = [...new Set(products.map(p => p.brand))];
+    const filterContainer = document.getElementById('sub-tops');
+    filterContainer.innerHTML = brands.map(b => `
+        <label class="brand-filter"><input type="checkbox" value="${b}"> ${b}</label>
+    `).join('');
+}
 
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-
-    <script>
-        // =========================================================
-        // 🚨 修正點 1: 整合您的 Google Apps Script URL
-        // =========================================================
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxj1KQbiB3Q4aJAIJDJ_LcIbddkkrBNeCS_J1Wo44JbGZW6KpjmhmHxemURciWA8p6QyA/exec'; 
-
-        // 取得產品清單容器
-        const productListEl = document.getElementById('product-list');
-
-        /**
-         * 根據產品資料物件，生成單一產品的 HTML 卡片。
-         * @param {Object} product - 單一產品資料物件。
-         * @returns {string} 產品卡片的 HTML 字符串。
-         */
-        function createProductCard(product) {
-            // =========================================================
-            // 🚨 修正點 2: 依據 JSON 數據，修正所有欄位名稱為大寫
-            // =========================================================
-            
-            const productCode = product.Code; // 使用 Code 作為 ID
-            const productName = product.Name || '無名稱產品';
-            
-            // 價格欄位修正：使用正確的大寫欄位名稱
-            const originalPrice = parseFloat(product.Price_Original) || 0;
-            // 處理帶有特殊符號的欄位名稱 (例如 Price-20%OFF)
-            const discountPrice = parseFloat(product['Price-20%OFF']) || 0; 
-            
-            // 圖片 URL 修正：使用正確的大寫欄位名稱
-            const imageUrl = product.MainImage_URL || '/images/placeholder.jpg';
-
-            // --- 顏色顯示邏輯 (解析 ColorImages 欄位) ---
-            let colorNames = [];
-            if (product.ColorImages) {
-                // 移除換行符號，並以分號（；）分隔每個顏色項目
-                const colorItems = String(product.ColorImages).replace(/\n/g, '').split('；'); 
-                
-                colorNames = colorItems.map(item => {
-                    // 分割顏色名稱和圖片路徑
-                    const parts = item.trim().split('#/');
-                    return parts.length > 0 ? parts[0] : ''; // 取得顏色名稱
-                }).filter(name => name.length > 0)
-                  .slice(0, 4); // 最多顯示 4 個顏色/花紋
-            }
-            
-            // 簡易的顏色代碼對應表 (請注意，這裡使用通用顏色，但標題會顯示您的自定義名稱)
-            const colorMap = {
-                '黑白格紋': '#4A4A4A',
-                '蝴蝶結': '#FFB6C1', 
-                '紅格紋': '#B71C1C',
-                '豹紋': '#B8860B',
-                '黑白圓點': '#333333',
-                '紅白圓點': '#FF8A80',
-                '白': '#E0E0E0',
-                '黑': '#333333',
-                '米': '#F5F5DC',
-                '粉': '#FFC0CB',
-                '灰': '#CCCCCC'
-            };
-            
-            const colorSwatchesHtml = colorNames.map(colorName => {
-                // 嘗試匹配顏色代碼，否則使用灰色
-                const colorCode = colorMap[colorName] || '#999999'; 
-                
-                // 將顏色名稱儲存在 title 中，滑鼠懸停時可顯示
-                return `<span class="swatch" title="${colorName}" style="background-color: ${colorCode};"></span>`;
-            }).join('');
-
-            return `
-                <li class="product-item">
-                    <a href="detail.html?id=${productCode}" class="product-link">
-                        <div class="product-image">
-                            <img src="${imageUrl}" alt="${productName}">
-                        </div>
-                    </a>
-                    <div class="product-info">
-                        <div class="color-swatches">
-                            ${colorSwatchesHtml}
-                        </div>
-                    </div>
-                    <a href="detail.html?id=${productCode}" class="product-name">${productName}</a>
-                    <div class="price-box">
-                        <span class="original-price">${originalPrice.toFixed(0)} TWD</span>
-                        <span class="discount-price">${discountPrice.toFixed(0)} TWD</span>
-                    </div>
-                </li>
-            `;
-        }
-
-        /**
-         * 抓取 Apps Script 的資料並渲染到網頁上。
-         */
-        async function fetchAndRenderProducts() {
-            // 顯示載入狀態
-            if (productListEl) {
-                productListEl.innerHTML = '<li style="text-align: center; width: 100%;">正在從 Google 試算表載入產品資料...</li>';
-            }
-
-            try {
-                const response = await fetch(GAS_URL);
-                const products = await response.json(); 
-
-                if (productListEl) {
-                    if (products && Array.isArray(products) && products.length > 0) {
-                        // 將所有產品卡片 HTML 組合起來
-                        const htmlContent = products.map(createProductCard).join('');
-                        productListEl.innerHTML = htmlContent;
-                    } else {
-                        productListEl.innerHTML = '<li style="text-align: center; width: 100%;">目前沒有任何產品。</li>';
-                    }
-                }
-
-            } catch (error) {
-                console.error('讀取產品資料失敗:', error);
-                if (productListEl) {
-                    productListEl.innerHTML = '<li style="text-align: center; width: 100%; color: red;">載入資料失敗，請檢查網路或 Apps Script URL。</li>';
-                }
-            }
-        }
-
-        // 頁面載入時執行一次
-        window.onload = () => {
-            fetchAndRenderProducts();
-        };
-    </script>
-</body>
-</html>
+// 啟動程式
+initApp();
