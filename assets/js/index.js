@@ -1,29 +1,29 @@
-document.addEventListener("DOMContentLoaded", async () => {
-    const products = await fetchProducts();
+import { fetchProducts } from './api.js';
+import { addToCart } from './cart.js';
 
-    const newArrivals = document.getElementById("newArrivals");
-    const collection = document.getElementById("collection");
+document.addEventListener('DOMContentLoaded', async () => {
+  const products = await fetchProducts();
+  const container = document.querySelector('#product-list');
 
-    products.forEach(p => {
-        const card = document.createElement("div");
-        card.className = "p-card";
-        card.innerHTML = `
-            <div class="p-img-box">
-                <img class="p-img-main" src="${p.mainImg}">
-            </div>
-            <div class="p-info">
-                <div class="p-name">${p.name}</div>
-                <div class="p-price">NT$ ${p.price}</div>
-            </div>
-        `;
-        card.onclick = () => showDetail(p.code);
-        (p.category === "NEW") ? newArrivals.appendChild(card) : collection.appendChild(card);
+  products.forEach(product => {
+    const priceArr = [];
+    ['bebe','kids','junior'].forEach(sz => {
+      if (product.sizes[sz]) priceArr.push(product.sizes[sz].salePrice);
     });
-});
+    const minPrice = Math.min(...priceArr);
 
-function showDetail(code) {
-    localStorage.setItem("currentProduct", code);
-    document.getElementById("page-index").style.display = "none";
-    document.getElementById("page-detail").style.display = "block";
-    loadDetailPage();
-}
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.innerHTML = `
+      <img src="${product.mainImage}" />
+      <div class="brand">${product.brand}</div>
+      <div class="name">${product.name}</div>
+      <div class="price">${minPrice}</div>
+      <div class="colors">
+        ${product.colors.map(c => `<span style="background:${c.value}"></span>`).join('')}
+      </div>
+    `;
+    card.addEventListener('click', () => window.location.href = `detail.html?code=${product.code}`);
+    container.appendChild(card);
+  });
+});

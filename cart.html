@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AiFang Kids - 購物車</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header>
+  <h1>AiFang Kids</h1>
+</header>
+
+<main>
+  <section id="cart-list">
+    <h2>購物車清單</h2>
+    <div id="cart-items"></div>
+
+    <div id="cart-summary">
+      <p>小計: <span id="subtotal"></span></p>
+      <p>1+1 折扣: <span id="bundleDiscount"></span></p>
+      <p>付款折扣: <span id="paymentDiscount"></span></p>
+      <p>運費: <span id="shipping"></span></p>
+      <p>總金額: <span id="total"></span></p>
+
+      <button id="to-checkout">前往結帳</button>
+    </div>
+  </section>
+
+  <aside id="cart-preview">
+    <!-- 側欄購物車 -->
+  </aside>
+</main>
+
+<script type="module" src="assets/js/cart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', ()=>{
+  const itemsContainer = document.querySelector('#cart-items');
+  const summaryElems = {
+    subtotal: document.querySelector('#subtotal'),
+    bundleDiscount: document.querySelector('#bundleDiscount'),
+    paymentDiscount: document.querySelector('#paymentDiscount'),
+    shipping: document.querySelector('#shipping'),
+    total: document.querySelector('#total')
+  };
+
+  function renderCartPage(paymentMethod='') {
+    itemsContainer.innerHTML = '';
+    cart.forEach((item,index)=>{
+      const price = item.sizes[item.size.toLowerCase()]?.salePrice || item.sizes[item.size.toLowerCase()]?.price || 0;
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <img src="${item.mainImage}" width="50">
+        <div>${item.name} (${item.size})</div>
+        <div>${item.color.name}</div>
+        <div>${price} x ${item.quantity}</div>
+        <button data-index="${index}">刪除</button>
+      `;
+      div.querySelector('button').addEventListener('click',()=>{ removeFromCart(index); renderCartPage(paymentMethod); });
+      itemsContainer.appendChild(div);
+    });
+
+    const calc = calculateCart(paymentMethod);
+    summaryElems.subtotal.textContent = calc.subtotal;
+    summaryElems.bundleDiscount.textContent = calc.bundleDiscount;
+    summaryElems.paymentDiscount.textContent = calc.paymentDiscount;
+    summaryElems.shipping.textContent = calc.shipping;
+    summaryElems.total.textContent = calc.total;
+  }
+
+  renderCartPage();
+
+  document.querySelector('#to-checkout').addEventListener('click',()=> window.location.href='checkout.html');
+});
+</script>
+</body>
+</html>

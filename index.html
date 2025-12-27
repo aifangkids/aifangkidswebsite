@@ -1,54 +1,34 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AiFang Studio | Home</title>
-<link rel="stylesheet" href="css/style.css">
+<title>AiFang Kids - 商品列表</title>
+<link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
 
-<header id="main-header">
-    <div class="menu-icon" onclick="toggleMenu(true)">☰</div>
-    <div class="logo">AiFang Studio</div>
-    <div class="cart-icon" onclick="toggleCart()">🛒 <span id="cartCount">0</span></div>
+<header>
+  <h1>AiFang Kids</h1>
 </header>
 
-<div class="nav-overlay" id="overlay" onclick="closeAll()"></div>
+<main>
+  <aside id="left-menu">
+    <h2>分類 / 品牌</h2>
+    <div id="category-list"></div>
+  </aside>
 
-<div class="side-nav" id="left-menu"></div>
-<div class="side-nav" id="right-cart"></div>
+  <section id="product-list">
+    <!-- 商品卡片自動生成 -->
+  </section>
 
-<div id="page-index">
-    <section class="hero"></section>
+  <aside id="cart-preview">
+    <!-- 側欄購物車 -->
+  </aside>
+</main>
 
-    <div class="section-title">NEW ARRIVALS</div>
-    <div class="grid-2col" id="newArrivals"></div>
-
-    <div class="section-title">COLLECTION</div>
-    <div class="grid-4col" id="collection"></div>
-</div>
-
-<div id="page-detail" style="display:none;"></div>
-
-<footer>
-    <div class="footer-grid">
-        <div><strong>AiFang Studio</strong><br>CUSTOMER CENTER<br>02-1234-5678</div>
-        <div><strong>ABOUT</strong><br>Brand Story<br>Terms<br>Privacy</div>
-        <div><strong>GUIDE</strong><br>Shopping Guide<br>Shipping<br>Size Table</div>
-        <div><strong>SOCIAL</strong><br>Instagram<br>Line Channel</div>
-    </div>
-</footer>
-
-<div class="quick-btm">
-    <div class="btm-btn" onclick="window.scrollTo({top:0, behavior:'smooth'})">TOP</div>
-    <div class="btm-btn" style="background:#06C755; color:#fff; border:none;">LINE</div>
-</div>
-
-<script src="js/api.js"></script>
-<script src="js/cart.js"></script>
-<script src="js/index.js"></script>
-<script src="js/detail.js"></script>
-<script src="js/checkout.js"></script>
+<script type="module" src="assets/js/index.js"></script>
+<script type="module" src="assets/js/cart.js"></script>
+<script type="module" src="assets/js/api.js"></script>
 </body>
 </html>
