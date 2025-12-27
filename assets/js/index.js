@@ -1,63 +1,56 @@
+// index.js - 商品列表頁
+
 import { fetchProducts } from './api.js';
-import { addToCart, renderCartPreview } from './cart.js';
+import { addToCart } from './cart.js';
 
-const productList=document.getElementById('product-list');
-const categoryList=document.getElementById('category-list');
-let allProducts=[];
+document.addEventListener('DOMContentLoaded', async () => {
+  const productList = document.getElementById('product-list');
+  if (!productList) return;
 
-function createCategorySidebar(products){
-    const categories=[...new Set(products.map(p=>p.category))];
-    categoryList.innerHTML='';
-    categories.forEach(cat=>{
-        const catDiv=document.createElement('div');
-        catDiv.classList.add('category-item');
-        catDiv.innerHTML=`<span class="category-toggle">☰ ${cat}</span><div class="brand-list"></div>`;
-        const brandListDiv=catDiv.querySelector('.brand-list');
-        const brands=[...new Set(products.filter(p=>p.category===cat).map(p=>p.brand))];
-        brands.forEach(brand=>{
-            const bDiv=document.createElement('div');
-            bDiv.classList.add('brand-item');
-            bDiv.innerHTML=`<input type="checkbox" data-category="${cat}" data-brand="${brand}"> ${brand}`;
-            brandListDiv.appendChild(bDiv);
-        });
-        catDiv.querySelector('.category-toggle').addEventListener('click',()=>{
-            brandListDiv.classList.toggle('expanded');
-        });
-        categoryList.appendChild(catDiv);
+  const products = await fetchProducts();
+
+  products.forEach(product => {
+    const lowestPrice = Math.min(
+      ...Object.values(product.sizes)
+        .filter(s => s)
+        .map(s => s.salePrice || s.price)
+    );
+
+    const html = `
+      <div class="product-card">
+        <img src="${product.mainImage}" alt="${product.name}">
+        <div class="brand">${product.brand}</div>
+        <div class="name">${product.name}</div>
+        <div class="price">$${lowestPrice}</div>
+        <button class="view-detail" data-code="${product.code}">查看</button>
+        <button class="add-cart" data-code="${product.code}">加入購物車</button>
+      </div>
+    `;
+    productList.innerHTML += html;
+  });
+
+  // 點擊查看商品
+  document.querySelectorAll('.view-detail').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const code = e.target.dataset.code;
+      window.location.href = `detail.html?code=${code}`;
     });
+  });
 
-    // 多選品牌篩選
-    categoryList.querySelectorAll('input[type=checkbox]').forEach(cb=>{
-        cb.addEventListener('change',renderProducts);
+  // 點擊加入購物車
+  document.querySelectorAll('.add-cart').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const code = e.target.dataset.code;
+      const product = products.find(p => p.code === code);
+      if (!product) return;
+
+      // 預設選擇第一個尺寸和顏色
+      const sizeKey = Object.keys(product.sizes).find(k => product.sizes[k]);
+      const size = product.sizes[sizeKey].options[0];
+      const color = product.colors[0].name;
+
+      addToCart(product, size, color, 1);
+      alert(`${product.name} 已加入購物車`);
     });
-}
-
-function renderProducts(){
-    const checkedBrands=[...categoryList.querySelectorAll('input[type=checkbox]:checked')].map(cb=>({category:cb.dataset.category,brand:cb.dataset.brand}));
-    let filtered=allProducts;
-    if(checkedBrands.length>0){
-        filtered=allProducts.filter(p=>checkedBrands.some(c=>c.category===p.category && c.brand===p.brand));
-    }
-    productList.innerHTML='';
-    filtered.forEach(p=>{
-        const card=document.createElement('div');
-        card.classList.add('product-card');
-        const sizes=[p.sizes.bebe,p.sizes.kids,p.sizes.junior].filter(s=>s!==null);
-        let minPrice=Math.min(...sizes.map(s=>s.salePrice||s.price));
-        card.innerHTML=`
-            <div class="brand-label">${p.brand}</div>
-            <img src="${p.mainImage}">
-            <h3>${p.name}</h3>
-            <div class="price">NT$${minPrice}</div>
-        `;
-        card.addEventListener('click',()=>{window.location.href=`/detail.html?code=${p.code}`;});
-        productList.appendChild(card);
-    });
-}
-
-document.addEventListener('DOMContentLoaded',async ()=>{
-    allProducts=await fetchProducts();
-    createCategorySidebar(allProducts);
-    renderProducts();
-    renderCartPreview();
+  });
 });

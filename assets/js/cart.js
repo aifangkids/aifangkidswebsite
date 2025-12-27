@@ -1,65 +1,114 @@
-export let cart = JSON.parse(localStorage.getItem('cart')) || [];
+// cart.js - 全站共用購物車邏輯
 
-export function addToCart(product, size, color, qty=1){
-    if(!product || !size || !color) return;
-    const exist = cart.find(item => 
-        item.code===product.code &&
-        item.size===size &&
-        item.color.name===color.name
-    );
-    if(exist) exist.quantity += qty;
-    else cart.push({code:product.code,name:product.name,brand:product.brand,mainImage:product.mainImage,sizes:product.sizes,size:size,color:color,quantity:qty,stylingtips:product.stylingtips || null});
-    saveCart();
+export let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+export function saveCart() {
+  localStorage.setItem('cart', JSON.stringify(cart));
 }
 
-export function removeFromCart(index){
-    cart.splice(index,1);
-    saveCart();
+// 加入購物車
+export function addToCart(product, size, color, qty = 1) {
+  if (!product || !size || !color) return;
+
+  const existingIndex = cart.findIndex(
+    (item) => item.code === product.code && item.size === size && item.color === color
+  );
+
+  const price = product.sizes?.[size.toLowerCase()]?.salePrice || product.sizes?.[size.toLowerCase()]?.price || 0;
+
+  const cartItem = {
+    code: product.code,
+    name: product.name,
+    size,
+    color,
+    price,
+    qty
+  };
+
+  if (existingIndex > -1) {
+    cart[existingIndex].qty += qty;
+  } else {
+    cart.push(cartItem);
+  }
+
+  saveCart();
+  renderCartPreview();
 }
 
-export function saveCart(){
-    localStorage.setItem('cart', JSON.stringify(cart));
+// 刪除商品
+export function removeFromCart(index) {
+  cart.splice(index, 1);
+  saveCart();
+  renderCartPreview();
 }
 
-export function calculateCart(paymentMethod=''){
-    let subtotal=0,bundleDiscount=0,paymentDiscount=0,shipping=45;
-    const codes=cart.map(i=>i.code);
-    cart.forEach(item=>{
-        const sizes=item.sizes||{};
-        const sizeKey=item.size.toLowerCase();
-        const sizeObj=sizes[sizeKey]||{};
-        const price=sizeObj.salePrice||sizeObj.price||0;
-        subtotal+=price*item.quantity;
-        if(item.stylingtips && codes.includes(item.stylingtips)) bundleDiscount+=100;
+// 計算購物車價格（小計、折扣、運費、總額）
+export function calculateCart(paymentMethod = '') {
+  let subtotal = 0;
+  cart.forEach(item => {
+    subtotal += (item.price || 0) * (item.qty || 1);
+  });
+
+  // TODO: 1+1 折扣判斷，可用 item.code 與 stylingTips
+  let bundleDiscount = 0; // 簡單示範
+  // let bundleDiscount = calcBundleDiscount(cart);
+
+  let afterBundle = subtotal - bundleDiscount;
+
+  let paymentDiscount = 1;
+  let shippingFee = 45;
+
+  if (paymentMethod === 'bank') {
+    paymentDiscount = 0.8;
+    shippingFee = 0;
+  } else if (paymentMethod === 'cod') {
+    paymentDiscount = 0.9;
+  }
+
+  let total = afterBundle * paymentDiscount;
+
+  if (total >= 1500) shippingFee = 0;
+
+  total += shippingFee;
+
+  return { subtotal, bundleDiscount, paymentDiscount, shippingFee, total };
+}
+
+// 渲染右側購物車預覽
+export function renderCartPreview() {
+  const container = document.getElementById('cart-preview');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  cart.forEach((item, index) => {
+    const name = item?.name || '未知商品';
+    const size = item?.size || '';
+    const color = item?.color || '';
+    const price = item?.price || 0;
+    const qty = item?.qty || 1;
+
+    const html = `
+      <div class="cart-item">
+        <span class="cart-item-name">${name}</span>
+        <span class="cart-item-size">${size}</span>
+        <span class="cart-item-color">${color}</span>
+        <span class="cart-item-price">$${price}</span>
+        <span class="cart-item-qty">x${qty}</span>
+        <button class="cart-item-remove" data-index="${index}">刪除</button>
+      </div>
+    `;
+    container.innerHTML += html;
+  });
+
+  // 綁定刪除按鈕
+  container.querySelectorAll('.cart-item-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.target.dataset.index);
+      removeFromCart(idx);
     });
-    if(paymentMethod==='remit'){paymentDiscount=0.2*(subtotal-bundleDiscount);shipping=0;}
-    else if(paymentMethod==='cod'){paymentDiscount=0.1*(subtotal-bundleDiscount);shipping=subtotal>=1500?0:45;}
-    else{paymentDiscount=0;shipping=subtotal>=1500?0:45;}
-    const total=subtotal-bundleDiscount-paymentDiscount+shipping;
-    return {subtotal,bundleDiscount,paymentDiscount,shipping,total};
+  });
 }
 
-export function renderCartPreview(){
-    const container=document.querySelector('#cart-preview');
-    if(!container) return;
-    container.innerHTML='';
-    cart.forEach((item,index)=>{
-        const sizes=item.sizes||{};
-        const sizeKey=item.size.toLowerCase();
-        const sizeObj=sizes[sizeKey]||{};
-        const price=sizeObj.salePrice||sizeObj.price||0;
-        const div=document.createElement('div');
-        div.classList.add('cart-item-preview');
-        div.innerHTML=`
-            <img src="${item.mainImage}" width="40">
-            <div>${item.name} (${item.size})</div>
-            <div>${item.color.name}</div>
-            <div>${price} x ${item.quantity}</div>
-            <button data-index="${index}">刪除</button>
-        `;
-        div.querySelector('button').addEventListener('click',()=>{removeFromCart(index);renderCartPreview();});
-        container.appendChild(div);
-    });
-}
-
+// 初始化右側購物車預覽
 document.addEventListener('DOMContentLoaded', renderCartPreview);
