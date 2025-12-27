@@ -1,41 +1,27 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>購物車清單</title>
-<link rel="stylesheet" href="assets/css/style.css">
-<style>
-.cart-table { width:100%; border-collapse:collapse; }
-.cart-table th, .cart-table td { border:1px solid #ddd; padding:5px; text-align:center; }
-.cart-summary { margin-top:10px; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AiFang Kids - 購物車</title>
+
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400&display=swap" rel="stylesheet">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/assets/css/style.css">
+
+  <!-- JS -->
+  <script type="module" src="/assets/js/api.js"></script>
+  <script type="module" src="/assets/js/cart.js"></script>
+  <script type="module" src="/assets/js/cart-page.js" defer></script>
 </head>
 <body>
-
-<header><h1>AiFang Kids - 購物車</h1></header>
-
-<main>
-  <table class="cart-table" id="cart-table">
-    <thead>
-      <tr>
-        <th>商品</th>
-        <th>尺寸</th>
-        <th>顏色</th>
-        <th>單價</th>
-        <th>數量</th>
-        <th>小計</th>
-        <th>操作</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-  <div class="cart-summary" id="cart-summary"></div>
-  <aside id="cart-preview"></aside>
-</main>
-
-<script type="module" src="assets/js/cart.js"></script>
-<script type="module" src="assets/js/cart-page.js"></script>
-
+  <main id="cart-list"></main>
+  <a href="/checkout.html">前往結帳</a>
 </body>
 </html>

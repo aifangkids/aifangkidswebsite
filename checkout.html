@@ -1,39 +1,26 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>結帳頁</title>
-<link rel="stylesheet" href="assets/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AiFang Kids - 結帳</title>
+
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400&display=swap" rel="stylesheet">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/assets/css/style.css">
+
+  <!-- JS -->
+  <script type="module" src="/assets/js/api.js"></script>
+  <script type="module" src="/assets/js/cart.js"></script>
+  <script type="module" src="/assets/js/checkout.js" defer></script>
 </head>
 <body>
-
-<header><h1>AiFang Kids - 結帳</h1></header>
-
-<main>
-  <form id="checkout-form">
-    <label>付款方式:
-      <select name="payment" id="payment">
-        <option value="remit">匯款</option>
-        <option value="cod">貨到付款</option>
-      </select>
-    </label>
-    <label>運送方式:
-      <select name="shipping" id="shipping">
-        <option value="home">宅配</option>
-        <option value="store">7-11</option>
-      </select>
-    </label>
-    <label>收件人: <input type="text" name="consignee" id="consignee" required></label>
-    <label>7-11店號（選填）: <input type="text" name="store" id="store"></label>
-    <div>總金額: <span id="total"></span></div>
-    <button type="submit">送出訂單</button>
-  </form>
-  <aside id="cart-preview"></aside>
-</main>
-
-<script type="module" src="assets/js/cart.js"></script>
-<script type="module" src="assets/js/checkout.js"></script>
-
+  <main id="checkout-form"></main>
 </body>
 </html>

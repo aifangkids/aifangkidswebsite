@@ -1,45 +1,44 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AiFang Kids - 商品列表</title>
-<link rel="stylesheet" href="assets/css/style.css">
-<style>
-#left-menu { width: 220px; float:left; border-right:1px solid #ddd; padding:10px; }
-.category { cursor:pointer; padding:5px; background:#f0f0f0; margin-bottom:2px; display:flex; justify-content:space-between; align-items:center; transition:0.3s; }
-.category:hover { background:#e0e0e0; }
-.brand-list { display:none; margin-left:15px; transition: all 0.3s ease; }
-.brand-item { cursor:pointer; padding:3px 0; display:flex; align-items:center; }
-.brand-item input { margin-right:5px; }
-.product-container { margin-left:240px; display:flex; flex-wrap:wrap; }
-.product-card { width:200px; border:1px solid #ddd; margin:10px; padding:10px; cursor:pointer; position:relative; transition:0.3s; }
-.product-card:hover { box-shadow:0 0 10px rgba(0,0,0,0.2); }
-.product-card .brand { position:absolute; top:5px; left:5px; background:#fff; color:#000; padding:2px 5px; font-size:12px; }
-.product-card .colors span { width:15px; height:15px; border-radius:50%; display:inline-block; margin-right:3px; border:1px solid #ccc; }
-#cart-preview { position:fixed; right:0; top:50px; width:200px; background:#f9f9f9; padding:10px; border-left:1px solid #ddd; max-height:80vh; overflow-y:auto; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AiFang Kids - 商品列表</title>
+
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400&display=swap" rel="stylesheet">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/assets/css/style.css">
+
+  <!-- JS -->
+  <script type="module" src="/assets/js/api.js"></script>
+  <script type="module" src="/assets/js/cart.js"></script>
+  <script type="module" src="/assets/js/index.js" defer></script>
 </head>
 <body>
-
-<header>
-  <h1>AiFang Kids</h1>
-</header>
-
-<main>
-  <aside id="left-menu">
-    <h2>分類 / 品牌</h2>
+  <!-- 左側分類/品牌側欄 -->
+  <aside id="sidebar-left">
     <div id="category-list"></div>
   </aside>
 
-  <section class="product-container" id="product-list"></section>
+  <!-- 商品列表 -->
+  <main id="product-list"></main>
 
-  <aside id="cart-preview"></aside>
-</main>
+  <!-- 右側購物車 -->
+  <aside id="sidebar-right">
+    <div id="cart-preview"></div>
+    <a href="/cart.html">查看購物車</a>
+  </aside>
 
-<script type="module" src="assets/js/api.js"></script>
-<script type="module" src="assets/js/cart.js"></script>
-<script type="module" src="assets/js/index.js"></script>
-
+  <!-- Quick Tools -->
+  <div id="quick-tools">
+    <button id="top-btn">TOP</button>
+    <a href="https://lin.ee/@844bwwjl" target="_blank">LINE</a>
+  </div>
 </body>
 </html>

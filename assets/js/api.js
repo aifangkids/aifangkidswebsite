@@ -1,24 +1,24 @@
-// api.js - 只負責從 GAS 取得資料
+// assets/js/api.js
 const API_URL = 'https://script.google.com/macros/s/AKfycbxrmloTY4wCo1Sn5tgMQDRwhU8uXWBTA0c6v17ec7M6W5LkufjES1fjJBolMb_552z5/exec';
 
-async function fetchProducts() {
-  const res = await fetch(API_URL);
-  const data = await res.json();
-  return data.products;
+export async function fetchProducts(){
+    try{
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        return data.products || [];
+    } catch(err){
+        console.error('fetchProducts error:', err);
+        return [];
+    }
 }
 
-async function fetchDetails() {
-  const res = await fetch(API_URL);
-  const data = await res.json();
-  return data.details;
-}
-
-async function fetchProductByCode(code) {
-  const products = await fetchProducts();
-  return products.find(p => p.code === code);
-}
-
-async function fetchDetailByCode(code) {
-  const details = await fetchDetails();
-  return details.find(d => d.code === code);
+export async function fetchDetails(){
+    try{
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        return data.details || [];
+    } catch(err){
+        console.error('fetchDetails error:', err);
+        return [];
+    }
 }
