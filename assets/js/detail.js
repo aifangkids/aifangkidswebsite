@@ -1,49 +1,41 @@
-// assets/js/detail.js
-import { fetchProducts } from './api.js';
+import { fetchProductByCode } from './api.js';
 import { addToCart, renderCartPreview } from './cart.js';
 
-document.addEventListener('DOMContentLoaded', async ()=>{
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    const products = await fetchProducts();
-    const product = products.find(p=>p.code===code);
-    if(!product) return;
+const detailContainer=document.getElementById('product-detail');
 
-    document.querySelector('#product-title').textContent=product.name;
-    document.querySelector('#material').textContent='材質：'+(product.material||'');
-    document.querySelector('#description').textContent=product.description||'';
+function getQueryParam(param){
+    const url=new URL(window.location.href);
+    return url.searchParams.get(param);
+}
 
-    const colorContainer=document.querySelector('#color-options');
-    product.colors.forEach(c=>{
-        const span=document.createElement('span');
-        span.style.background=c.value;
-        span.style.display='inline-block';
-        span.style.width='20px';
-        span.style.height='20px';
-        span.style.margin='2px';
-        span.style.cursor='pointer';
-        span.addEventListener('click',()=> selectedColor=c);
-        colorContainer.appendChild(span);
+function renderDetail(product){
+    if(!product) {detailContainer.innerHTML='商品不存在'; return;}
+    const sizes=[product.sizes.bebe,product.sizes.kids,product.sizes.junior].filter(s=>s!==null);
+    let sizeOptions='';
+    sizes.forEach(s=>{
+        sizeOptions+=`<button data-group="${s.label}">${s.label}</button>`;
     });
-    let selectedColor=product.colors[0];
-
-    const sizeContainer=document.querySelector('#size-options');
-    Object.entries(product.sizes).forEach(([key,val])=>{
-        if(val){
-            val.options.forEach(opt=>{
-                const btn=document.createElement('button');
-                btn.textContent=opt;
-                btn.addEventListener('click',()=> selectedSize=opt.split('|')[0]);
-                sizeContainer.appendChild(btn);
-            });
-        }
-    });
-    let selectedSize=Object.entries(product.sizes).find(([k,v])=>v)[1]?.options[0].split('|')[0];
-
-    document.querySelector('#add-to-cart').addEventListener('click', ()=>{
-        addToCart(product, selectedSize, selectedColor);
+    const colorOptions=product.colors.map(c=>`<div class="color-swatch" style="background:${c.value}"></div>`).join('');
+    detailContainer.innerHTML=`
+        <h2>${product.name}</h2>
+        <div>${product.brand}</div>
+        <img src="${product.mainImage}" width="200">
+        <div>${product.material}</div>
+        <div>${product.description}</div>
+        <div class="sizes">${sizeOptions}</div>
+        <div class="colors">${colorOptions}</div>
+        <button id="add-cart">加入購物車</button>
+    `;
+    document.getElementById('add-cart').addEventListener('click',()=>{
+        addToCart(product,sizes[0].label,product.colors[0],1);
         renderCartPreview();
         alert('已加入購物車');
     });
+}
 
+document.addEventListener('DOMContentLoaded',async ()=>{
+    const code=getQueryParam('code');
+    const product=await fetchProductByCode(code);
+    renderDetail(product);
+    renderCartPreview();
 });

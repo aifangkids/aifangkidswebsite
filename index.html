@@ -1,44 +1,23 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AiFang Kids - 商品列表</title>
-
-  <!-- Favicon -->
-  <link rel="icon" href="/favicon.ico" type="image/x-icon">
-  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400&display=swap" rel="stylesheet">
-
-  <!-- CSS -->
-  <link rel="stylesheet" href="/assets/css/style.css">
-
-  <!-- JS -->
-  <script type="module" src="/assets/js/api.js"></script>
-  <script type="module" src="/assets/js/cart.js"></script>
-  <script type="module" src="/assets/js/index.js" defer></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AiFang Kids Studio - 商品列表</title>
+<link rel="icon" href="favicon.ico">
+<link rel="stylesheet" href="assets/css/style.css">
+<script type="module" src="assets/js/index.js" defer></script>
 </head>
 <body>
-  <!-- 左側分類/品牌側欄 -->
-  <aside id="sidebar-left">
+<div id="sidebar-left">
     <div id="category-list"></div>
-  </aside>
-
-  <!-- 商品列表 -->
-  <main id="product-list"></main>
-
-  <!-- 右側購物車 -->
-  <aside id="sidebar-right">
+</div>
+<main>
+    <div id="product-list"></div>
+</main>
+<div id="sidebar-right">
+    <h3>購物車預覽</h3>
     <div id="cart-preview"></div>
-    <a href="/cart.html">查看購物車</a>
-  </aside>
-
-  <!-- Quick Tools -->
-  <div id="quick-tools">
-    <button id="top-btn">TOP</button>
-    <a href="https://lin.ee/@844bwwjl" target="_blank">LINE</a>
-  </div>
+</div>
 </body>
 </html>

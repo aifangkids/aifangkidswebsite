@@ -1,4 +1,3 @@
-// assets/js/api.js
 const API_URL = 'https://script.google.com/macros/s/AKfycbxrmloTY4wCo1Sn5tgMQDRwhU8uXWBTA0c6v17ec7M6W5LkufjES1fjJBolMb_552z5/exec';
 
 export async function fetchProducts(){
@@ -21,4 +20,9 @@ export async function fetchDetails(){
         console.error('fetchDetails error:', err);
         return [];
     }
+}
+
+export async function fetchProductByCode(code){
+    const details = await fetchDetails();
+    return details.find(d=>d.code===code) || null;
 }

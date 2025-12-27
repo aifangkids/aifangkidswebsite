@@ -1,26 +1,23 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AiFang Kids - 結帳</title>
-
-  <!-- Favicon -->
-  <link rel="icon" href="/favicon.ico" type="image/x-icon">
-  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400&display=swap" rel="stylesheet">
-
-  <!-- CSS -->
-  <link rel="stylesheet" href="/assets/css/style.css">
-
-  <!-- JS -->
-  <script type="module" src="/assets/js/api.js"></script>
-  <script type="module" src="/assets/js/cart.js"></script>
-  <script type="module" src="/assets/js/checkout.js" defer></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AiFang Kids Studio - 結帳</title>
+<link rel="icon" href="favicon.ico">
+<link rel="stylesheet" href="assets/css/style.css">
+<script type="module" src="assets/js/checkout.js" defer></script>
 </head>
 <body>
-  <main id="checkout-form"></main>
+<div id="sidebar-left">
+    <div id="category-list"></div>
+</div>
+<main>
+    <div id="checkout-form"></div>
+</main>
+<div id="sidebar-right">
+    <h3>購物車預覽</h3>
+    <div id="cart-preview"></div>
+</div>
 </body>
 </html>

@@ -1,83 +1,63 @@
-// assets/js/index.js
 import { fetchProducts } from './api.js';
 import { addToCart, renderCartPreview } from './cart.js';
 
-document.addEventListener('DOMContentLoaded', async () => {
-    const products = await fetchProducts();
-    const categoryList = document.querySelector('#category-list');
-    const productContainer = document.querySelector('#product-list');
+const productList=document.getElementById('product-list');
+const categoryList=document.getElementById('category-list');
+let allProducts=[];
 
-    // 生成分類與品牌
-    const categories = {};
-    products.forEach(p=>{
-        if(!categories[p.category]) categories[p.category]=new Set();
-        categories[p.category].add(p.brand);
-    });
-
-    for(const [cat, brands] of Object.entries(categories)){
-        const catDiv = document.createElement('div');
-        catDiv.className='category';
-        catDiv.innerHTML=`<span>${cat}</span><span>▸</span>`;
-
-        const brandListDiv = document.createElement('div');
-        brandListDiv.className='brand-list';
-        brands.forEach(b=>{
-            const brandDiv = document.createElement('div');
-            brandDiv.className='brand-item';
-            brandDiv.innerHTML=`<input type="checkbox" value="${b}"/> ${b}`;
-            brandListDiv.appendChild(brandDiv);
+function createCategorySidebar(products){
+    const categories=[...new Set(products.map(p=>p.category))];
+    categoryList.innerHTML='';
+    categories.forEach(cat=>{
+        const catDiv=document.createElement('div');
+        catDiv.classList.add('category-item');
+        catDiv.innerHTML=`<span class="category-toggle">☰ ${cat}</span><div class="brand-list"></div>`;
+        const brandListDiv=catDiv.querySelector('.brand-list');
+        const brands=[...new Set(products.filter(p=>p.category===cat).map(p=>p.brand))];
+        brands.forEach(brand=>{
+            const bDiv=document.createElement('div');
+            bDiv.classList.add('brand-item');
+            bDiv.innerHTML=`<input type="checkbox" data-category="${cat}" data-brand="${brand}"> ${brand}`;
+            brandListDiv.appendChild(bDiv);
         });
-
-        catDiv.addEventListener('click', ()=>{
-            brandListDiv.style.display = brandListDiv.style.display==='block'?'none':'block';
+        catDiv.querySelector('.category-toggle').addEventListener('click',()=>{
+            brandListDiv.classList.toggle('expanded');
         });
-
         categoryList.appendChild(catDiv);
-        categoryList.appendChild(brandListDiv);
-    }
-
-    function renderProducts(filterBrands=[]){
-        productContainer.innerHTML='';
-        products.forEach(p=>{
-            if(filterBrands.length && !filterBrands.includes(p.brand)) return;
-
-            const priceArr=[];
-            ['bebe','kids','junior'].forEach(sz=>{
-                if(p.sizes[sz]) priceArr.push(p.sizes[sz].salePrice||p.sizes[sz].price);
-            });
-            const minPrice = Math.min(...priceArr);
-
-            const card=document.createElement('div');
-            card.className='product-card';
-            card.innerHTML=`
-                <img src="${p.mainImage}" width="180">
-                <div class="brand">${p.brand}</div>
-                <div class="name">${p.name}</div>
-                <div class="price">${minPrice}</div>
-                <div class="colors">${p.colors.map(c=>`<span style="background:${c.value}"></span>`).join('')}</div>
-                <button class="add-btn" data-code="${p.code}" data-size="bebe" data-color='${JSON.stringify(p.colors[0])}'>加入購物車</button>
-            `;
-            productContainer.appendChild(card);
-
-            card.querySelector('.add-btn').addEventListener('click', ()=>{
-                addToCart(p,'bebe',p.colors[0]);
-                renderCartPreview();
-            });
-
-            card.addEventListener('click', e=>{
-                if(!e.target.classList.contains('add-btn')){
-                    window.location.href=`detail.html?code=${p.code}`;
-                }
-            });
-        });
-    }
-
-    renderProducts();
-
-    categoryList.querySelectorAll('.brand-item input').forEach(input=>{
-        input.addEventListener('change', ()=>{
-            const selectedBrands = Array.from(categoryList.querySelectorAll('.brand-item input:checked')).map(i=>i.value);
-            renderProducts(selectedBrands);
-        });
     });
+
+    // 多選品牌篩選
+    categoryList.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+        cb.addEventListener('change',renderProducts);
+    });
+}
+
+function renderProducts(){
+    const checkedBrands=[...categoryList.querySelectorAll('input[type=checkbox]:checked')].map(cb=>({category:cb.dataset.category,brand:cb.dataset.brand}));
+    let filtered=allProducts;
+    if(checkedBrands.length>0){
+        filtered=allProducts.filter(p=>checkedBrands.some(c=>c.category===p.category && c.brand===p.brand));
+    }
+    productList.innerHTML='';
+    filtered.forEach(p=>{
+        const card=document.createElement('div');
+        card.classList.add('product-card');
+        const sizes=[p.sizes.bebe,p.sizes.kids,p.sizes.junior].filter(s=>s!==null);
+        let minPrice=Math.min(...sizes.map(s=>s.salePrice||s.price));
+        card.innerHTML=`
+            <div class="brand-label">${p.brand}</div>
+            <img src="${p.mainImage}">
+            <h3>${p.name}</h3>
+            <div class="price">NT$${minPrice}</div>
+        `;
+        card.addEventListener('click',()=>{window.location.href=`/detail.html?code=${p.code}`;});
+        productList.appendChild(card);
+    });
+}
+
+document.addEventListener('DOMContentLoaded',async ()=>{
+    allProducts=await fetchProducts();
+    createCategorySidebar(allProducts);
+    renderProducts();
+    renderCartPreview();
 });

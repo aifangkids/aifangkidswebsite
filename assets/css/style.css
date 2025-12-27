@@ -1,5 +1,13 @@
-body { font-family:'Noto Sans KR', sans-serif; margin:0; }
-.product-card { border:1px solid #ddd; padding:10px; margin:10px; cursor:pointer; }
-.brand { background:#fff; color:#000; padding:2px 5px; display:inline-block; }
-.colors span { width:15px; height:15px; display:inline-block; border-radius:50%; margin-right:3px; }
-#cart-preview { position:fixed; right:0; top:50px; width:200px; background:#f9f9f9; padding:10px; border-left:1px solid #ddd; }
+body{font-family:'Noto Sans KR',sans-serif;margin:0;padding:0;}
+#sidebar-left,#sidebar-right{position:fixed;top:0;bottom:0;width:200px;overflow:auto;}
+#sidebar-left{left:0;background:#f5f5f5;padding:10px;}
+#sidebar-right{right:0;background:#fff;padding:10px;border-left:1px solid #ccc;}
+main{margin-left:210px;margin-right:210px;padding:10px;}
+.product-card{border:1px solid #ccc;padding:10px;margin:10px;cursor:pointer;}
+.category-toggle{cursor:pointer;font-weight:bold;}
+.brand-list{display:none;padding-left:15px;transition:all 0.3s ease;}
+.brand-list.expanded{display:block;}
+.color-swatch{width:20px;height:20px;border:1px solid #000;display:inline-block;margin-right:3px;}
+button{cursor:pointer;}
+.cart-item-preview, .cart-item{border-bottom:1px solid #ddd;padding:5px;}
+.cart-totals{margin-top:10px;font-weight:bold;}
