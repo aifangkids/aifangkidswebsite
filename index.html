@@ -1,232 +1,130 @@
-// --- 1. 核心配置 ---
-// 這是你的 API 網址，用於 GET (載入商品) 與 POST (提交訂單)
-const API_URL = "https://script.google.com/macros/s/AKfycbxrmloTY4wCo1Sn5tgMQDRwhU8uXWBTA0c6v17ec7M6W5LkufjES1fjJBolMb_552z5/exec"; 
-// 注意：上面我幫你簡化為部署後的正式 URL，若執行失敗請換回你原本那個超長的內容 key 網址
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>AiFang Kids Studio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-let allData = { products: [], details: [] };
-let cart = [];
+<style>
+body{margin:0;font-family:"Noto Sans KR",sans-serif;color:#222}
+header{position:fixed;top:0;width:100%;background:#fff;border-bottom:1px solid #eee;
+display:flex;justify-content:space-between;align-items:center;padding:15px 30px;z-index:1000}
+.logo{font-weight:bold;letter-spacing:5px;cursor:pointer}
+main{padding-top:90px;max-width:1200px;margin:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:30px}
+.card{cursor:pointer}
+.card img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:4px}
+.card-name{text-align:center;margin-top:10px;font-size:14px}
+.card-price{text-align:center;font-size:13px;font-weight:bold}
+#detail{display:none}
+.buy-btn{width:100%;padding:18px;background:#000;color:#fff;border:none;font-weight:bold;cursor:pointer}
+.size-btn{border:1px solid #ddd;padding:6px 14px;margin:4px;cursor:pointer}
+.size-btn.active{background:#000;color:#fff}
+</style>
+</head>
 
-// --- 2. 視圖管理與導覽 ---
-function showView(id) {
-    document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    window.scrollTo(0, 0);
+<body>
+
+<header>
+  <div class="logo" onclick="showHome()">AiFang</div>
+  <div onclick="alert('購物車功能已整合')">🛒</div>
+</header>
+
+<main>
+
+<!-- 首頁 -->
+<section id="home">
+  <div class="grid" id="productGrid"></div>
+</section>
+
+<!-- 商品頁 -->
+<section id="detail">
+  <img id="d-img" style="width:100%;max-width:500px">
+  <h2 id="d-name"></h2>
+  <p id="d-brand"></p>
+
+  <div id="sizeBox"></div>
+
+  <button class="buy-btn" onclick="addCart()">ADD TO CART</button>
+
+  <div id="detailImgs"></div>
+</section>
+
+</main>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycbxrmloTY4wCo1Sn5tgMQDRwhU8uXWBTA0c6v17ec7M6W5LkufjES1fjJBolMb_552z5/exec";
+let PRODUCTS=[],DETAILS=[],CURRENT=null,SELECT_SIZE=null;
+
+fetch(API).then(r=>r.json()).then(d=>{
+  PRODUCTS=d.products;DETAILS=d.details;renderHome();
+});
+
+function renderHome(){
+  const g=document.getElementById("productGrid");
+  g.innerHTML="";
+  PRODUCTS.forEach(p=>{
+    g.innerHTML+=`
+    <div class="card" onclick="openDetail('${p.code}')">
+      <img src="${p.mainImage}">
+      <div class="card-name">${p.name}</div>
+      <div class="card-price">NT$ ${priceRange(p)}</div>
+    </div>`;
+  });
 }
 
-function openNav(id) {
-    document.getElementById(id).classList.add('active');
-    document.getElementById('overlay').style.display = 'block';
+function priceRange(p){
+  let arr=[];
+  ["bebe","kids","junior"].forEach(k=>{
+    if(p.sizes[k])arr.push(p.sizes[k].price);
+  });
+  return arr.join(" - ");
 }
 
-function closeAll() {
-    document.querySelectorAll('.side-nav').forEach(s => s.classList.remove('active'));
-    document.getElementById('overlay').style.display = 'none';
+function openDetail(code){
+  CURRENT=PRODUCTS.find(p=>p.code===code);
+  const d=DETAILS.find(x=>x.code===code);
+  document.getElementById("home").style.display="none";
+  document.getElementById("detail").style.display="block";
+
+  document.getElementById("d-img").src=CURRENT.mainImage;
+  document.getElementById("d-name").innerText=CURRENT.name;
+  document.getElementById("d-brand").innerText=CURRENT.brand;
+
+  const sb=document.getElementById("sizeBox");
+  sb.innerHTML="";
+  Object.values(CURRENT.sizes).forEach(s=>{
+    s.options.forEach(o=>{
+      sb.innerHTML+=`<button class="size-btn" onclick="pickSize(this,'${o}')">${o}</button>`;
+    });
+  });
+
+  const imgs=document.getElementById("detailImgs");
+  imgs.innerHTML="";
+  d.detailImages.forEach(i=>{
+    imgs.innerHTML+=`<img src="${i}" style="width:100%;margin-top:10px">`;
+  });
 }
 
-function toggleSub(id) {
-    document.getElementById(id).classList.toggle('active');
+function pickSize(el,size){
+  document.querySelectorAll(".size-btn").forEach(b=>b.classList.remove("active"));
+  el.classList.add("active");
+  SELECT_SIZE=size;
 }
 
-// --- 3. 初始化：抓取 API 數據 ---
-async function initApp() {
-    try {
-        // 使用你原本提供的長網址進行 GET
-        const longUrl = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLgCo9EajvenCtLsxrhtmJTYmZZdd7gHEkNxMOUyVUaui8W3_gKifiXByfR2zvjMgLg_XkRVhB-1_U1vvPSRnrNMIhA0mppvvyjeTpw4QcXsIXZGDokR_3xd56AVsJSOkdtbgCqGKL9oF1AlMWFvNbBl2nsE6ydj3CkNHbjdChZLSqFKYdrCOODWZ7Jdy0DFrp9ZGdaGe1MTBXvzbLduZq0XReD3riS97NFG0I-l76aAAfCeG006O2SBPV7oF994r4nwUYwA79gE4flO0iA7xzWbSI67QQ&lib=Mc6w9ccL94SXtnTspuIvQiP6P3xwH8FnN";
-        const response = await fetch(longUrl);
-        allData = await response.json();
-        console.log("✅ 數據載入成功:", allData);
-        
-        renderProductList(allData.products);
-        renderFilters(allData.products);
-    } catch (error) {
-        console.error("❌ API 載入失敗:", error);
-    }
+function addCart(){
+  if(!SELECT_SIZE){alert("請選尺寸");return;}
+  const cart=JSON.parse(localStorage.getItem("cart")||"[]");
+  cart.push({code:CURRENT.code,size:SELECT_SIZE,price:priceRange(CURRENT)});
+  localStorage.setItem("cart",JSON.stringify(cart));
+  alert("已加入購物車");
 }
 
-// --- 4. 渲染首頁列表 ---
-function renderProductList(products) {
-    // 找到首頁放置商品的 grid 容器
-    const listContainer = document.querySelector('#page-index > div:last-child');
-    if (!listContainer) return;
-
-    listContainer.innerHTML = products.map(p => `
-        <div class="p-card" onclick="loadProductDetail('${p.code}')">
-            <img src="${p.mainImage}" style="width:100%; aspect-ratio:1/1; object-fit:cover;">
-            <div style="text-align:center; padding:15px;">
-                <div style="font-size:12px; color:#888;">${p.brand}</div>
-                <div style="font-size:14px; margin:5px 0; font-weight:400;">${p.name}</div>
-                <div style="font-weight:700;">NT$ ${p.sizes.bebe.salePrice} UP</div>
-            </div>
-        </div>
-    `).join('');
+function showHome(){
+  document.getElementById("detail").style.display="none";
+  document.getElementById("home").style.display="block";
 }
+</script>
 
-// --- 5. 詳情頁處理 ---
-function loadProductDetail(code) {
-    const detail = allData.details.find(d => d.code === code);
-    const productBase = allData.products.find(p => p.code === code);
-    if (!detail) return;
-
-    const container = document.getElementById('page-detail');
-    
-    // 生成尺寸按鈕
-    let sizeButtonsHTML = "";
-    if (detail.sizes.bebe) sizeButtonsHTML += `<button class="s-btn baby" onclick="selectPrice(this, '${detail.sizes.bebe.salePrice}')">BEBE (${detail.sizes.bebe.options})<br><strong>NT$ ${detail.sizes.bebe.salePrice}</strong></button>`;
-    if (detail.sizes.kids) sizeButtonsHTML += `<button class="s-btn kids" onclick="selectPrice(this, '${detail.sizes.kids.salePrice}')">KIDS (${detail.sizes.kids.options})<br><strong>NT$ ${detail.sizes.kids.salePrice}</strong></button>`;
-    if (detail.sizes.junior) sizeButtonsHTML += `<button class="s-btn junior" onclick="selectPrice(this, '${detail.sizes.junior.salePrice}')">JUNIOR (${detail.sizes.junior.options})<br><strong>NT$ ${detail.sizes.junior.salePrice}</strong></button>`;
-
-    // 生成詳情圖 (1-15張)
-    const detailImagesHTML = detail.detailImages.map(img => `<img src="${img}" style="width:100%; margin-bottom:10px;">`).join('');
-
-    container.innerHTML = `
-        <div class="detail-container">
-            <div style="flex:1.2;">
-                <img src="${productBase.mainImage}" style="width:100%;">
-                <div style="margin-top:30px;">${detailImagesHTML}</div>
-            </div>
-            <div style="flex:1; position:sticky; top:120px; height:fit-content;">
-                <div style="border:1.5px solid #000; display:inline-block; padding:3px 12px; font-size:11px; font-weight:bold;">${detail.brand}</div>
-                <h1 style="font-size:26px; margin:15px 0; font-weight:500;">${detail.name}</h1>
-                <p style="font-size:13px; color:#666; line-height:1.8; font-weight:100;">${detail.description}</p>
-                <p style="font-size:12px; color:#999;">材質: ${detail.material}</p>
-                
-                <div class="color-dots">
-                    ${detail.colors.map(c => `<div class="dot" style="${c.value.startsWith('#') ? 'background:'+c.value : 'background:url('+c.value+') center/cover'}" title="${c.name}"></div>`).join('')}
-                </div>
-
-                <div id="active-price" style="font-size:24px; font-weight:700; margin:20px 0;">NT$ ${detail.sizes.bebe.salePrice}</div>
-
-                <div class="styling-btn" onclick="alert('${detail.stylingtips}')">✨ Styling Tips</div>
-
-                <div style="margin-top:30px;">
-                    <p style="font-size:12px; font-weight:bold;">SELECT SIZE & PRICE</p>
-                    <div class="size-btns">${sizeButtonsHTML}</div>
-                </div>
-
-                <button class="btn-black" style="margin-top:40px; width:100%; padding:20px; background:#000; color:#fff; border:none; font-weight:bold; cursor:pointer;" onclick="addToCart('${detail.code}')">ADD TO SHOPPING BAG</button>
-            </div>
-        </div>
-    `;
-    showView('page-detail');
-}
-
-function selectPrice(btn, price) {
-    document.querySelectorAll('.s-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('active-price').innerText = `NT$ ${price}`;
-}
-
-// --- 6. 購物車核心邏輯 ---
-function addToCart(code) {
-    const product = allData.products.find(p => p.code === code);
-    const activeSizeBtn = document.querySelector('.s-btn.active');
-    
-    if (!activeSizeBtn) {
-        alert("請先點選尺寸按鈕！");
-        return;
-    }
-
-    const selectedPrice = activeSizeBtn.querySelector('strong').innerText.replace('NT$ ', '').replace(',', '');
-    const sizeLabel = activeSizeBtn.innerText.split('(')[0].trim();
-
-    const cartItem = {
-        code: product.code,
-        name: product.name,
-        price: parseInt(selectedPrice),
-        size: sizeLabel,
-        image: product.mainImage
-    };
-
-    cart.push(cartItem);
-    renderCart();
-    openNav('right-cart');
-}
-
-function renderCart() {
-    const cartBody = document.querySelector('.cart-body');
-    const subtotalDisplay = document.querySelector('.summary-row:nth-child(1) span:last-child');
-    const grandTotalDisplay = document.querySelector('.cart-footer div[style*="font-size: 18px"] span:last-child');
-
-    if (cart.length === 0) {
-        cartBody.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px; font-weight:100;">你的購物車目前是空的</p>';
-        subtotalDisplay.innerText = "NT$ 0";
-        grandTotalDisplay.innerText = "NT$ 0";
-        return;
-    }
-
-    cartBody.innerHTML = cart.map((item, index) => `
-        <div style="display:flex; gap:15px; margin-bottom:20px; align-items:center; border-bottom:1px solid #f2f2f2; padding-bottom:15px;">
-            <img src="${item.image}" width="60" style="aspect-ratio:1/1; object-fit:cover;">
-            <div style="flex:1;">
-                <div style="font-size:13px; font-weight:500;">${item.name}</div>
-                <div style="font-size:11px; color:#888;">${item.size}</div>
-                <div style="font-size:12px; margin-top:5px; font-weight:700;">NT$ ${item.price}</div>
-            </div>
-            <span onclick="removeFromCart(${index})" style="cursor:pointer; color:#ccc; padding:10px;">✕</span>
-        </div>
-    `).join('');
-
-    const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
-    subtotalDisplay.innerText = `NT$ ${subtotal.toLocaleString()}`;
-    grandTotalDisplay.innerText = `NT$ ${subtotal.toLocaleString()}`;
-}
-
-function removeFromCart(index) {
-    cart.splice(index, 1);
-    renderCart();
-}
-
-// --- 7. 提交訂單 (doPost) ---
-async function checkout() {
-    if (cart.length === 0) {
-        alert("購物車內沒有商品");
-        return;
-    }
-
-    const consignee = prompt("請輸入收件人姓名：");
-    if (!consignee) return;
-
-    const storeNumber = prompt("請輸入 7-11 店號 (若宅配請留空)：") || "";
-
-    const orderData = {
-        paymentTerms: "信用卡/轉帳",
-        shippingMethod: storeNumber ? "7-11取貨" : "宅配",
-        totalPrice: cart.reduce((sum, item) => sum + item.price, 0),
-        consignee: consignee,
-        storeNumber: storeNumber
-    };
-
-    // 使用正式的部署網址進行 POST
-    const POST_URL = "https://script.google.com/macros/s/AKfycbzQpS8E_v36S8yXf9XvX3S-S1oXW-S9S/exec"; 
-
-    try {
-        alert("正在提交訂單，請稍候...");
-        await fetch(POST_URL, {
-            method: "POST",
-            mode: "no-cors", 
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(orderData)
-        });
-
-        alert("訂單已成功送出！感謝您的購買。");
-        cart = [];
-        renderCart();
-        closeAll();
-        showView('page-index');
-    } catch (error) {
-        alert("提交失敗，請檢查網路連線或聯繫客服。");
-    }
-}
-
-// --- 8. 品牌篩選 ---
-function renderFilters(products) {
-    const brands = [...new Set(products.map(p => p.brand))];
-    const filterContainer = document.getElementById('sub-tops');
-    if (!filterContainer) return;
-    filterContainer.innerHTML = brands.map(b => `
-        <label class="brand-filter"><input type="checkbox" value="${b}"> ${b}</label>
-    `).join('');
-}
-
-// --- 啟動 ---
-initApp();
+</body>
+</html>
